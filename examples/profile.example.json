@@ -1,0 +1,29 @@
+{
+  "name": "Sam Rivera",
+  "legal_first_name": "Samuel",
+  "preferred_first_name": "Sam",
+  "last_name": "Rivera",
+  "email": "sam@example.edu",
+  "phone": "(555) 010-0000",
+  "city": "Seattle",
+  "country_of_residence": "United States",
+  "citizenship_country": "United States",
+  "school": "Example University",
+  "school_aliases": ["example university", "eu"],
+  "other_campuses": [],
+  "degree": "BS, Human-Centered Design",
+  "grad_term": "Spring",
+  "grad_year": "2028",
+  "work_authorization": {"us": "citizen"},
+  "declarations": {"us_work_authorized": "Yes", "requires_sponsorship": "No"},
+  "places": [
+    {"group": "home", "label": "Seattle", "note": "in Seattle", "match": ["seattle", "bellevue", "redmond"]},
+    {"group": "west-coast", "label": "West Coast", "note": "on the West Coast",
+     "match": ["san francisco", "oakland", "portland", "los angeles", "california", "oregon"]}
+  ],
+  "fields": ["design", "software"],
+  "links": {"portfolio": "https://example.com", "linkedin": "https://linkedin.com/in/example"},
+  "transcript": {"gpa_cumulative": "3.6"},
+  "resume_text": "(filled in by: python3 intern_profile.py resume.pdf)",
+  "cover_letter_text": ""
+}

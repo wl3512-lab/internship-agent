@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.DS_Store
+.internship-agent/
+profile.json
+tracker.json
+watchlist.json
+applications/

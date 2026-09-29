@@ -1,0 +1,11 @@
+{
+  "name": "internship-agent",
+  "owner": { "name": "Lucy Liu" },
+  "plugins": [
+    {
+      "name": "internship-agent",
+      "source": "./",
+      "description": "Internship search, ranking, résumé tailoring and form filling for Claude Code. Never submits."
+    }
+  ]
+}

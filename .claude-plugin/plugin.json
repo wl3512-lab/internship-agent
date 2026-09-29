@@ -1,0 +1,9 @@
+{
+  "name": "internship-agent",
+  "description": "Finds internships, ranks them against your résumé and eligibility, tailors a résumé and cover letter for each, and fills application forms up to the submit button. Never submits.",
+  "version": "0.1.0",
+  "author": { "name": "Lucy Liu" },
+  "repository": "https://github.com/wl3512-lab/internship-agent",
+  "license": "MIT",
+  "keywords": ["internships", "job search", "resume", "cover letter", "students"]
+}
