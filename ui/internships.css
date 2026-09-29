@@ -1,0 +1,556 @@
+/* Internships page + résumé chat for the Today planner.
+   Lives in the internship-agent repo so the UI ships with the agent it drives;
+   the planner loads it from the clone (~/internship-agent/ui/). */
+
+/* ── Internships ────────────────────────────────────────────────────────
+   Same five sections as the Internship Scout artifact, drawn in the
+   planner's own vocabulary: the shared .subnav for the tabs, the same status
+   pills as a mark rather than a fill, and the same density as Classes. */
+/* No display here. `.page { display: none }` hides every page and
+   `.page.active { display: flex }` shows the current one, but both are class
+   selectors - an id rule setting display beats them and pins the page open on
+   top of whichever one she actually chose. That is what put Internships on
+   Study, on Today and on Classes at the same time. */
+#jobsPage { flex-direction: column; gap: 12px; min-height: 0; }
+.jb-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.jb-title { font-family: var(--font-display); font-size: var(--t-xl); font-weight: 600; margin: 0; }
+.jb-prio { margin: 4px 0 0; font-size: var(--t-sm); color: var(--ink-soft); max-width: 62ch; line-height: 1.5; }
+.jb-lastrun { font-size: var(--t-xs); color: var(--ink-soft); white-space: nowrap; }
+
+.jb-stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.jb-stat {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 7px 12px; border-radius: 999px;
+  background: var(--chip); border: 1px solid var(--edge-soft);
+}
+.jb-stat b { font-size: var(--t-md); font-weight: 650; }
+.jb-stat span { font-size: var(--t-xs); color: var(--ink-soft); }
+.jb-stat.hot { border-color: var(--accent); }
+.jb-stat.hot b { color: var(--accent-text); }
+
+#jbPanes { min-height: 0; overflow-y: auto; }
+.jb-cards { display: flex; flex-direction: column; gap: 10px; }
+.jb-card {
+  background: var(--surface); border: 1px solid var(--edge-soft);
+  border-radius: var(--r-sm); padding: 13px 15px;
+  display: flex; flex-direction: column; gap: 7px;
+}
+.jb-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: var(--t-xs); color: var(--ink-soft); }
+.jb-role { margin: 0; font-size: var(--t-md); font-weight: 600; line-height: 1.35; }
+.jb-co { color: var(--ink-soft); font-weight: 400; }
+.jb-q { margin: 0; font-size: var(--t-md); line-height: 1.4; }
+.jb-why { margin: 0; font-size: var(--t-sm); color: var(--ink-soft); line-height: 1.5; }
+.jb-hint { margin: 0 0 8px; font-size: var(--t-sm); color: var(--ink-soft); }
+.jb-flag { color: var(--amber); }
+.jb-fit { font-variant-numeric: tabular-nums; }
+.jb-due.soon { color: var(--rose); }
+.jb-empty { font-size: var(--t-sm); color: var(--ink-soft); margin: 6px 0 0; }
+.jb-mats { margin: 0; padding-left: 0; list-style: none; font-size: var(--t-sm); display: flex; flex-direction: column; gap: 3px; }
+.jb-mats a, .jb-table a { color: var(--accent-text); }
+
+.jb-ta {
+  width: 100%; box-sizing: border-box; min-height: 74px; resize: vertical;
+  background: var(--field); border: 1px solid var(--edge-soft);
+  border-radius: var(--r-sm); padding: 9px 11px;
+  color: var(--ink); font-family: var(--font); font-size: var(--t-sm); line-height: 1.5;
+}
+.jb-ta:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.jb-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.jb-runbox { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.jb-runrow { display: flex; gap: 8px; }
+.ai-files { display: flex; flex-wrap: wrap; gap: 6px; align-self: flex-start; margin-top: -4px; }
+.ai-file { background: var(--nk-ink); color: var(--nk-paper); border: 0; border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+/* Résumé chat, laid out like ChatGPT: her messages in grey bubbles on the
+   right, Claude's replies as plain formatted text, a pill composer with a
+   round send button, files as attachment cards. Colours come from the
+   planner's own tokens, so it follows the theme. */
+#jcDrawer {
+  --cg-bg: var(--bg); --cg-raised: var(--surface-2, var(--surface)); --cg-hover: color-mix(in oklab, var(--ink) 9%, var(--cg-raised));
+  --cg-line: color-mix(in oklab, var(--ink) 10%, transparent); --cg-ink: var(--ink); --cg-soft: var(--ink-soft);
+  --cg-faint: color-mix(in oklab, var(--ink-soft) 75%, var(--bg));
+  --jc-ease: cubic-bezier(.22, 1, .36, 1);
+  width: min(580px, 100vw); background: var(--cg-bg); color: var(--cg-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 15px; -webkit-font-smoothing: antialiased;
+  border-left: 1px solid var(--cg-line); box-shadow: -24px 0 48px rgba(0,0,0,.28);
+  transform: translateX(0); opacity: 1;
+  transition: transform 320ms var(--jc-ease), opacity 220ms var(--jc-ease);
+}
+#jcDrawer.jc-off { transform: translateX(32px); opacity: 0; }
+#jcDrawer .ai-head { grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 4px; padding: 12px 12px 8px 20px; border-bottom: 0; }
+#jcDrawer .ai-title { grid-column: 1; grid-row: 1; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; -webkit-line-clamp: 1; }
+#jcDrawer .ai-icon {
+  grid-row: 1; display: grid; place-items: center; width: 38px; height: 38px; min-height: 0; padding: 0;
+  border: 0; border-radius: 10px; background: transparent; color: var(--cg-soft); cursor: pointer;
+}
+#jcDrawer #jcNew { grid-column: 2; }
+#jcDrawer #jcClose { grid-column: 3; }
+#jcDrawer .ai-icon:hover { background: var(--cg-raised); color: var(--cg-ink); }
+#jcDrawer svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* the thread: one centred column, like a chat app at desktop width */
+#jcDrawer .ai-msgs { padding: 12px 24px 24px; gap: 22px; scroll-padding-bottom: 24px; }
+#jcDrawer .ai-msg { line-height: 1.6; font-size: 15px; }
+#jcDrawer .ai-msg.me { align-self: flex-end; max-width: 78%; padding: 10px 18px; border-radius: 22px; background: var(--cg-raised); color: var(--cg-ink); }
+#jcDrawer .ai-msg.them { align-self: stretch; max-width: 100%; padding: 0; border-radius: 0; background: transparent; color: var(--cg-ink); white-space: normal; }
+#jcDrawer .ai-msg.err { padding: 10px 16px; border: 0; border-radius: 16px; background: color-mix(in oklab, var(--urge-mark, #e5484d) 14%, transparent); color: var(--cg-ink); }
+
+/* Claude's markdown */
+#jcDrawer .md > :first-child { margin-top: 0; }
+#jcDrawer .md > :last-child { margin-bottom: 0; }
+#jcDrawer .md p { margin: 0 0 12px; }
+#jcDrawer .md h3, #jcDrawer .md h4 { margin: 18px 0 8px; font-size: 16px; font-weight: 600; line-height: 1.4; }
+#jcDrawer .md ul, #jcDrawer .md ol { margin: 0 0 12px; padding-left: 22px; }
+#jcDrawer .md li { margin: 4px 0; padding-left: 2px; }
+#jcDrawer .md li::marker { color: var(--cg-soft); }
+#jcDrawer .md strong { font-weight: 600; }
+#jcDrawer .md code { font: 13px/1.4 ui-monospace, "SF Mono", Menlo, monospace; padding: 2px 5px; border-radius: 6px; background: var(--cg-raised); }
+#jcDrawer .md pre { margin: 0 0 12px; padding: 12px 14px; border-radius: 12px; background: var(--cg-raised); overflow-x: auto; }
+#jcDrawer .md pre code { padding: 0; background: none; white-space: pre; }
+#jcDrawer .md a { color: inherit; text-decoration: underline; text-decoration-color: var(--cg-faint); text-underline-offset: 3px; }
+#jcDrawer .md a:hover { text-decoration-color: currentColor; }
+#jcDrawer .md hr { border: 0; height: 1px; background: var(--cg-line); margin: 16px 0; }
+
+/* empty state: a centred question and suggestion chips */
+#jcDrawer .jc-hello { margin: auto 0; display: flex; flex-direction: column; align-items: center; gap: 22px; text-align: center; padding: 0 8px 8vh; }
+#jcDrawer .jc-hello h2 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.25; }
+#jcDrawer .jc-hello p { margin: -12px 0 0; color: var(--cg-soft); font-size: 14px; line-height: 1.5; max-width: 38ch; }
+#jcDrawer .jc-starts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; width: 100%; }
+#jcDrawer .jc-start {
+  display: grid; gap: 2px; text-align: left; min-height: 44px; padding: 11px 14px; border-radius: 16px;
+  border: 1px solid var(--cg-line); background: transparent; color: var(--cg-ink); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+}
+#jcDrawer .jc-start small { color: var(--cg-soft); font-size: 13px; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#jcDrawer .jc-start:hover { background: var(--cg-raised); }
+
+/* downloads, as attachment cards */
+#jcDrawer .ai-files { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; align-self: stretch; margin: -8px 0 0; }
+#jcDrawer .ai-file {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; column-gap: 12px;
+  padding: 10px 14px 10px 10px; border: 1px solid var(--cg-line); border-radius: 16px;
+  background: transparent; color: var(--cg-ink); font: inherit; text-align: left; cursor: pointer; min-height: 60px;
+}
+#jcDrawer .ai-file:hover { background: var(--cg-raised); }
+#jcDrawer .jc-ficon { grid-row: span 2; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: #e5484d; color: #fff; }
+#jcDrawer .jc-ficon svg { width: 20px; height: 20px; stroke-width: 2; }
+#jcDrawer .ai-file.saved .jc-ficon { background: var(--win-mark, #30a46c); }
+#jcDrawer .jc-lab { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#jcDrawer .ai-file small { color: var(--cg-soft); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#jcDrawer .ai-file.failed small { color: var(--urge-mark, #e5484d); }
+
+/* working: ChatGPT's one pulsing dot */
+#jcDrawer .jc-typing { display: flex; align-items: center; gap: 12px; align-self: flex-start; color: var(--cg-soft); font-size: 14px; min-height: 24px; }
+#jcDrawer .jc-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--cg-ink); animation: jcBreathe 1.4s ease-in-out infinite; }
+@keyframes jcBreathe { 0%, 100% { transform: scale(.7); opacity: .55; } 50% { transform: scale(1); opacity: 1; } }
+
+#jcDrawer .ai-status { padding: 0 24px; min-height: 0; font-size: 13px; color: var(--cg-faint); text-align: center; }
+#jcDrawer .ai-status:not(:empty) { padding-bottom: 8px; }
+
+/* composer: a pill with the send button inside */
+#jcDrawer .ai-compose {
+  align-items: flex-end; gap: 8px; margin: 0 16px; padding: 8px 8px 8px 20px;
+  background: var(--cg-raised); border-radius: 28px; border: 1px solid var(--cg-line);
+  box-shadow: 0 4px 16px rgba(0,0,0,.08); transition: border-color 200ms var(--jc-ease);
+}
+#jcDrawer .ai-compose:focus-within { border-color: color-mix(in oklab, var(--ink) 22%, transparent); }
+#jcDrawer #jcInput {
+  flex: 1; min-width: 0; align-self: center; min-height: 0; max-height: 200px; overflow-y: auto; resize: none;
+  padding: 8px 0 !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; color: var(--cg-ink) !important;
+  font-family: inherit !important; font-size: 15px !important; line-height: 1.45; outline: none; box-shadow: none !important;
+}
+#jcDrawer #jcInput::placeholder { color: var(--cg-faint) !important; }
+#jcDrawer #jcInput:focus, #jcDrawer #jcInput:focus-visible { outline: none !important; }
+#jcDrawer #jcSend {
+  flex: none; display: grid; place-items: center; width: 36px; height: 36px; min-height: 0; padding: 0; border: 0;
+  border-radius: 50%; background: var(--cg-ink); color: var(--cg-bg); cursor: pointer;
+}
+#jcDrawer #jcSend svg { width: 18px; height: 18px; stroke-width: 2.4; }
+#jcDrawer #jcSend:disabled { background: color-mix(in oklab, var(--ink) 22%, var(--cg-raised)); color: var(--cg-raised); cursor: default; }
+#jcDrawer .jc-note { margin: 0; padding: 8px 24px 12px; text-align: center; font-size: 12px; color: var(--cg-faint); }
+
+/* motion: ease-out-quint, no bounce; everything still under reduced motion */
+#jcDrawer .jc-in { animation: jcRise 260ms var(--jc-ease) both; }
+@keyframes jcRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+#jcDrawer .jc-hello > * { animation: jcRise 320ms var(--jc-ease) both; }
+#jcDrawer .jc-hello > p { animation-delay: 40ms; }
+#jcDrawer .jc-starts .jc-start { animation: jcRise 320ms var(--jc-ease) both; }
+#jcDrawer .jc-starts .jc-start:nth-child(1) { animation-delay: 80ms; }
+#jcDrawer .jc-starts .jc-start:nth-child(2) { animation-delay: 120ms; }
+#jcDrawer .jc-starts .jc-start:nth-child(3) { animation-delay: 160ms; }
+#jcDrawer .jc-starts .jc-start:nth-child(4) { animation-delay: 200ms; }
+#jcDrawer button { transition: background-color 180ms var(--jc-ease), color 180ms var(--jc-ease), transform 120ms var(--jc-ease); }
+#jcDrawer button:active:not(:disabled) { transform: scale(.97); }
+#jcDrawer button:focus-visible { outline: 2px solid var(--cg-ink); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  #jcDrawer, #jcDrawer .jc-in, #jcDrawer .jc-hello > *, #jcDrawer .jc-starts .jc-start, #jcDrawer button { transition: none; animation: none; }
+  #jcDrawer.jc-off { transform: none; }
+  #jcDrawer .jc-dot { animation: none; }
+  #jcDrawer button:active:not(:disabled) { transform: none; }
+}
+@media (max-width: 480px) {
+  #jcDrawer .ai-msgs { padding: 8px 16px 20px; }
+  #jcDrawer .ai-compose { margin: 0 12px; }
+}
+
+/* Compact + docked. At 580px as an overlay it covered half the page and
+   read louder than the rest of the planner. Now it's an inspector: 360px,
+   the rail's chrome colour, the planner's type scale, and the page moves
+   over instead of hiding under it. */
+:root { --jc-w: 360px; }
+#jcDrawer {
+  width: var(--jc-w); background: var(--chrome); box-shadow: none;
+  font-family: var(--font); font-size: 13px;
+}
+.stage { transition: margin-right 320ms cubic-bezier(.22, 1, .36, 1); }
+body.jc-docked .stage { margin-right: var(--jc-w); }
+#jcDrawer .ai-head { padding: 10px 8px 6px 16px; }
+#jcDrawer .ai-title { font-size: 13px; font-weight: 600; }
+#jcDrawer .ai-icon { width: 28px; height: 28px; border-radius: 7px; }
+#jcDrawer svg { width: 16px; height: 16px; }
+#jcDrawer .ai-msgs { padding: 8px 16px 16px; gap: 14px; }
+#jcDrawer .ai-msg { font-size: 13px; line-height: 1.5; }
+#jcDrawer .ai-msg.me { max-width: 88%; padding: 7px 12px; border-radius: 16px; }
+/* a pasted job description is a wall; show the top of it */
+#jcDrawer .ai-msg.me.jc-long:not(.jc-open) {
+  max-height: calc(5 * 1.5em + 14px); overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent calc(100% - 4px));
+          mask-image: linear-gradient(to bottom, #000 60%, transparent calc(100% - 4px));
+}
+#jcDrawer .jc-more {
+  align-self: flex-end; margin: -10px 4px 0; padding: 0; border: 0; background: none;
+  color: var(--cg-soft); font: inherit; font-size: 12px; cursor: pointer;
+}
+#jcDrawer .jc-more:hover { color: var(--cg-ink); }
+#jcDrawer .md p, #jcDrawer .md ul, #jcDrawer .md ol, #jcDrawer .md pre { margin-bottom: 8px; }
+#jcDrawer .md h3, #jcDrawer .md h4 { margin: 12px 0 6px; font-size: 13px; }
+#jcDrawer .md ul, #jcDrawer .md ol { padding-left: 18px; }
+#jcDrawer .md li { margin: 2px 0; }
+#jcDrawer .md code { font-size: 12px; }
+#jcDrawer .jc-hello { gap: 14px; padding: 0 4px 6vh; }
+#jcDrawer .jc-hello h2 { font-size: 17px; }
+#jcDrawer .jc-hello p { margin-top: -8px; font-size: 12.5px; }
+#jcDrawer .jc-starts { grid-template-columns: 1fr; gap: 6px; }
+#jcDrawer .jc-start { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
+#jcDrawer .jc-start small { font-size: 12px; }
+#jcDrawer .ai-files { grid-template-columns: 1fr; margin-top: -6px; }
+#jcDrawer .ai-file { padding: 8px 10px; }
+#jcDrawer .jc-ficon { width: 30px; height: 30px; border-radius: 8px; }
+#jcDrawer .jc-ficon svg { width: 16px; height: 16px; }
+#jcDrawer .jc-lab { font-size: 13px; }
+#jcDrawer .ai-file small { font-size: 11.5px; }
+#jcDrawer .jc-typing { font-size: 12.5px; gap: 8px; }
+#jcDrawer .jc-dot { width: 9px; height: 9px; }
+#jcDrawer .ai-compose { margin: 0 10px; padding: 5px 5px 5px 14px; border-radius: 18px; }
+#jcDrawer #jcInput { font-size: 13px !important; padding: 6px 0; }
+#jcDrawer #jcSend { width: 28px; height: 28px; }
+#jcDrawer #jcSend svg { width: 14px; height: 14px; }
+#jcDrawer .jc-note { padding: 6px 16px 10px; font-size: 11px; }
+/* too narrow to share the width: back to an overlay */
+@media (max-width: 1000px) {
+  body.jc-docked .stage { margin-right: 0; }
+  #jcDrawer { box-shadow: -16px 0 32px rgba(0,0,0,.28); }
+}
+@media (max-width: 480px) { #jcDrawer { width: 100vw; } }
+.jb-btn {
+  min-height: 34px; padding: 7px 14px; border-radius: 999px;
+  border: 1px solid var(--edge); background: transparent;
+  color: var(--ink); font-family: var(--font); font-size: var(--t-sm);
+  cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;
+}
+.jb-btn:hover { background: var(--chip); }
+.jb-btn.primary { background: var(--mark); color: var(--on-mark); border-color: var(--mark); font-weight: 600; }
+.jb-btn.primary:hover { opacity: .9; }
+.jb-msg { font-size: var(--t-xs); color: var(--ink-soft); }
+.jb-msg.err { color: var(--rose); }
+.jb-fill { display: grid; gap: 6px; }
+.jb-fill-h { margin: 4px 0 0; font-size: var(--t-sm); font-weight: 600; }
+.jb-btn:disabled { opacity: .6; cursor: default; }
+
+/* status as a mark, never as small coloured text - the 3:1 non-text floor */
+.jb-pill {
+  font-size: var(--t-xs); padding: 2px 9px; border-radius: 999px;
+  border: 1px solid currentColor; white-space: nowrap;
+}
+.jb-pill.s-new     { color: var(--blue); }
+.jb-pill.s-needs   { color: var(--amber); }
+.jb-pill.s-ready   { color: var(--sage); }
+.jb-pill.s-sub     { color: var(--ink-soft); }
+.jb-pill.s-int     { color: var(--cat-deadline, #b39eeb); }
+.jb-pill.s-offer   { color: var(--sage); }
+.jb-pill.s-rej     { color: var(--rose); }
+.jb-pill.s-skip    { color: var(--ink-faint); }
+.jb-loc { font-size: var(--t-xs); color: var(--ink-soft); }
+.jb-loc.pri { color: var(--accent-text); }
+
+.jb-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 11px 0 9px; }
+.jb-locpick, .jb-field { display: flex; flex-direction: column; gap: 4px; }
+.jb-filters .jb-locpick { flex-direction: row; align-items: center; gap: 6px; }
+.jb-locpick span, .jb-field span {
+  font-size: var(--t-xs); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft);
+}
+.jb-locpick select, .jb-field select, .jb-field input, .jb-status {
+  background: var(--field); border: 1px solid var(--edge-soft); border-radius: 7px;
+  color: var(--ink); font-family: var(--font); font-size: var(--t-sm);
+  padding: 6px 8px; min-height: 32px;
+}
+
+.jb-add { margin-bottom: 4px; }
+.jb-add > summary {
+  cursor: pointer; font-size: var(--t-sm); color: var(--ink-soft);
+  padding: 7px 0; list-style: revert;
+}
+.jb-add > summary:hover { color: var(--ink); }
+.jb-addgrid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 9px; margin: 8px 0 10px;
+}
+.jb-details > summary { cursor: pointer; font-size: var(--t-sm); color: var(--ink-soft); padding: 8px 0; }
+
+.jb-tablebox { overflow-x: auto; }
+.jb-table { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
+.jb-table th {
+  text-align: left; font-size: var(--t-xs); font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft);
+  padding: 0 10px 7px 0; border-bottom: 1px solid var(--edge-soft);
+  white-space: nowrap;
+}
+.jb-table td { padding: 9px 10px 9px 0; border-bottom: 1px solid var(--edge-soft); vertical-align: top; }
+.jb-table tr:last-child td { border-bottom: 0; }
+.jb-sub { display: block; font-size: var(--t-xs); color: var(--ink-soft); margin-top: 2px; }
+
+/* ── Applied: the tracker ─────────────────────────────────────────────── */
+.jb-sent-inline { display: block; margin-top: 6px; white-space: nowrap; }
+.jb-applied-sum { margin: 4px 0 12px; font-weight: 600; color: var(--ink); }
+.jb-app-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  padding: 12px 14px; margin-bottom: 8px; border-radius: var(--r, 8px);
+  background: var(--surface); border-left: 4px solid var(--edge, #3a3a38);
+}
+.jb-app-row.s-interview { border-left-color: #ffd60a; }
+.jb-app-row.s-offer { border-left-color: #30d158; }
+.jb-app-row.s-rejected { border-left-color: var(--edge-soft); opacity: .6; }
+.jb-app-row.s-submitted { border-left-color: #0a84ff; }
+.jb-app-main { min-width: 0; flex: 1 1 280px; display: flex; flex-direction: column; gap: 2px; }
+.jb-app-role { font-weight: 700; color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+a.jb-app-role:hover { text-decoration: underline; }
+.jb-app-when { font-size: var(--t-xs); color: var(--ink-soft); font-family: ui-monospace, Menlo, monospace; }
+.jb-app-nudge { font-size: var(--t-xs); color: #ffd60a; }
+.jb-app-acts { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.jb-btn.small { min-height: 30px; padding: 0 10px; font-size: var(--t-xs); }
+.jb-btn.ghost { background: transparent; border-color: transparent; color: var(--ink-soft); }
+.jb-toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  padding: 10px 16px; border-radius: 999px; background: #30d158; color: #06200d; font-weight: 700;
+  transition: opacity 200ms, transform 200ms; z-index: 50;
+}
+.jb-toast.on { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .jb-toast { transition: none; } }
+.jb-num { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ink-soft); }
+.jb-num.soon { color: var(--rose); }
+.jb-status { display: block; margin-top: 6px; max-width: 150px; }
+
+.jb-notebox { display: flex; flex-direction: column; gap: 9px; }
+.jb-notes { display: flex; flex-direction: column; gap: 7px; margin-top: 4px; }
+.jb-note {
+  position: relative; padding: 9px 34px 9px 12px;
+  background: var(--surface); border: 1px solid var(--edge-soft);
+  border-radius: var(--r-sm); font-size: var(--t-sm); line-height: 1.5;
+}
+.jb-when { font-size: var(--t-xs); color: var(--ink-soft); margin-right: 8px; }
+.jb-reply { font-size: var(--t-xs); color: var(--ink-soft); margin-top: 4px; }
+.jb-x {
+  position: absolute; top: 6px; right: 6px; width: 26px; height: 26px;
+  background: transparent; border: 0; color: var(--ink-soft);
+  font-size: 16px; line-height: 1; cursor: pointer; border-radius: 6px;
+}
+.jb-x:hover { color: var(--ink); background: var(--chip); }
+
+.jb-log { display: flex; flex-direction: column; gap: 10px; }
+.jb-logitem { display: grid; grid-template-columns: 150px 1fr; gap: 12px; align-items: baseline; }
+.jb-logitem p { margin: 0; font-size: var(--t-sm); line-height: 1.5; }
+.jb-src { font-size: var(--t-xs); color: var(--ink-soft); margin-top: 3px; }
+
+@media (max-width: 720px) {
+  .jb-head { flex-direction: column; gap: 6px; }
+  .jb-logitem { grid-template-columns: 1fr; gap: 2px; }
+}
+
+
+.jb-offline {
+  margin: 0; padding: 8px 11px; border-radius: var(--r-sm);
+  background: var(--chip); border: 1px solid var(--amber);
+  font-size: var(--t-xs); color: var(--ink);
+}
+
+
+/* an application waiting to be sent, on Today */
+.ev-row.job .ev-tick::before { border-style: dashed; }
+.ev-row.job .ev-course { color: var(--accent-text); }
+
+
+/* a draft on disk, opened through the server rather than an href */
+.jb-open {
+  background: transparent; border: 0; padding: 3px 0;
+  color: var(--accent-text); font-family: var(--font); font-size: var(--t-sm);
+  cursor: pointer; text-align: left; text-decoration: underline;
+  text-underline-offset: 2px; min-height: 26px;
+}
+.jb-open:hover { color: var(--ink); }
+.jb-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Apple skin ──────────────────────────────────────────────────────────
+   macOS System Settings / iOS grouped lists: SF Pro, a segmented control for
+   the sections, inset rounded groups with hairline separators, filled
+   capsule buttons with one blue action, rows with a chevron. Scoped to
+   #jobsPage so the rest of the planner keeps its own look. */
+#jobsPage {
+  --ap-blue: #0a84ff; --ap-green: #30d158; --ap-orange: #ff9f0a; --ap-red: #ff453a; --ap-purple: #bf5af2;
+  --ap-group: color-mix(in oklab, var(--ink) 6%, var(--bg));
+  --ap-fill: color-mix(in oklab, var(--ink) 11%, var(--bg));
+  --ap-fill-2: color-mix(in oklab, var(--ink) 17%, var(--bg));
+  --ap-sep: color-mix(in oklab, var(--ink) 9%, transparent);
+  --ap-2nd: color-mix(in oklab, var(--ink) 60%, var(--bg));
+  --ap-3rd: color-mix(in oklab, var(--ink) 38%, var(--bg));
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased; gap: 16px;
+}
+#jobsPage .jb-title {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px;
+}
+#jobsPage .jb-prio { color: var(--ap-2nd); font-size: 13px; line-height: 1.45; max-width: 60ch; }
+#jobsPage .jb-lastrun { color: var(--ap-3rd); font-size: 11px; }
+
+/* buttons: filled capsules, no outlines; primary is the one blue thing */
+#jobsPage .jb-btn {
+  min-height: 28px; padding: 5px 13px; border: 0; border-radius: 999px;
+  background: var(--ap-fill); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 500;
+  transition: background-color .15s, transform .1s;
+}
+#jobsPage .jb-btn:hover { background: var(--ap-fill-2); }
+#jobsPage .jb-btn:active:not(:disabled) { transform: scale(.97); }
+#jobsPage .jb-btn.primary { background: var(--ap-blue); color: #fff; border: 0; }
+#jobsPage .jb-btn.primary:hover { opacity: 1; background: color-mix(in oklab, var(--ap-blue) 88%, #fff); }
+#jobsPage .jb-btn.ghost { background: transparent; color: var(--ap-blue); }
+#jobsPage .jb-btn.ghost:hover { background: color-mix(in oklab, var(--ap-blue) 14%, transparent); }
+#jobsPage #jbRunNow { background: var(--ap-blue); color: #fff; }
+
+/* stats: small widgets, number on top */
+#jobsPage .jb-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; max-width: 640px; }
+#jobsPage .jb-stat {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 10px 14px; border: 0; border-radius: 12px; background: var(--ap-group);
+}
+#jobsPage .jb-stat b { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+#jobsPage .jb-stat span { font-size: 12px; color: var(--ap-2nd); }
+#jobsPage .jb-stat.hot { background: color-mix(in oklab, var(--ap-orange) 16%, var(--ap-group)); }
+#jobsPage .jb-stat.hot b { color: var(--ap-orange); }
+
+/* sections: a segmented control instead of underlined tabs */
+#jobsPage .subnav {
+  display: inline-flex; align-self: flex-start; gap: 2px; padding: 2px; border: 0; border-radius: 9px;
+  background: var(--ap-fill); overflow-x: auto; max-width: 100%;
+}
+#jobsPage .subnav button {
+  margin: 0; padding: 4px 14px; border: 0; border-radius: 7px; background: transparent;
+  color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 500; white-space: nowrap;
+}
+#jobsPage .subnav button:hover { background: color-mix(in oklab, var(--ink) 6%, transparent); }
+#jobsPage .subnav button.on {
+  background: var(--ap-fill-2); border-bottom-color: transparent; font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,.25), 0 0 0 .5px rgba(0,0,0,.12);
+}
+#jobsPage .subnav .sn-badge { color: var(--ap-2nd); font-weight: 500; }
+
+/* status pills: tinted capsules, no outline */
+#jobsPage .jb-pill { border: 0; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 600;
+  background: color-mix(in oklab, var(--ink) 12%, transparent); color: var(--ap-2nd); }
+#jobsPage .jb-pill.s-ready  { background: color-mix(in oklab, var(--ap-green) 18%, transparent);  color: var(--ap-green); }
+#jobsPage .jb-pill.s-new    { background: color-mix(in oklab, var(--ap-blue) 18%, transparent);   color: var(--ap-blue); }
+#jobsPage .jb-pill.s-needs  { background: color-mix(in oklab, var(--ap-orange) 18%, transparent); color: var(--ap-orange); }
+#jobsPage .jb-pill.s-sub    { background: color-mix(in oklab, var(--ap-purple) 18%, transparent); color: var(--ap-purple); }
+#jobsPage .jb-pill.s-int, #jobsPage .jb-pill.s-offer { background: color-mix(in oklab, var(--ap-green) 18%, transparent); color: var(--ap-green); }
+#jobsPage .jb-pill.s-rej    { background: color-mix(in oklab, var(--ap-red) 16%, transparent);    color: var(--ap-red); }
+#jobsPage .jb-loc { color: var(--ap-blue); font-weight: 500; }
+
+/* cards: inset grouped */
+#jobsPage .jb-cards { gap: 12px; }
+#jobsPage .jb-card { border: 0; border-radius: 14px; background: var(--ap-group); padding: 16px 18px; }
+#jobsPage .jb-role { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+#jobsPage .jb-co { color: var(--ap-2nd); font-weight: 400; }
+#jobsPage .jb-why, #jobsPage .jb-sub, #jobsPage .jb-hint { color: var(--ap-2nd); }
+
+/* file links: a Settings-style list with chevrons */
+#jobsPage .jb-mats {
+  list-style: none; margin: 12px 0; padding: 0; border-radius: 10px; overflow: hidden;
+  background: var(--ap-fill);
+}
+#jobsPage .jb-mats li { margin: 0; border-top: .5px solid var(--ap-sep); }
+#jobsPage .jb-mats li:first-child { border-top: 0; }
+#jobsPage .jb-mats a {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 9px 14px; color: var(--ink); text-decoration: none; font-size: 13px;
+}
+#jobsPage .jb-mats a::after { content: "\203A"; color: var(--ap-3rd); font-size: 18px; line-height: 1; }
+#jobsPage .jb-mats a:hover { background: color-mix(in oklab, var(--ink) 5%, transparent); }
+#jobsPage .jb-row { gap: 8px; }
+
+/* Applied: grouped list, status as a coloured dot, not a bar */
+#jobsPage .jb-applied-sum { color: var(--ap-2nd); font-weight: 500; font-size: 13px; }
+#jobsPage .jb-applied { gap: 0; }
+#jobsPage .jb-app-row {
+  position: relative; margin: 0; border: 0; border-left: 0 !important; border-radius: 0;
+  background: var(--ap-group); padding: 12px 16px 12px 34px; border-top: .5px solid var(--ap-sep);
+}
+#jobsPage .jb-app-row:first-of-type { border-top: 0; border-radius: 14px 14px 0 0; }
+#jobsPage .jb-app-row:last-of-type { border-radius: 0 0 14px 14px; }
+#jobsPage .jb-app-row:first-of-type:last-of-type { border-radius: 14px; }
+#jobsPage .jb-app-row::before {
+  content: ""; position: absolute; left: 14px; top: 18px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ap-purple);
+}
+#jobsPage .jb-app-row.s-interview::before, #jobsPage .jb-app-row.s-offer::before { background: var(--ap-green); }
+#jobsPage .jb-app-row.s-rejected::before { background: var(--ap-3rd); }
+#jobsPage .jb-app-role { font-size: 14px; font-weight: 600; color: var(--ink); }
+#jobsPage .jb-app-when { color: var(--ap-3rd); font-family: inherit; font-size: 12px; }
+#jobsPage .jb-app-acts .jb-btn { min-height: 24px; padding: 3px 10px; font-size: 12px; }
+
+/* Every posting: an inset table */
+#jobsPage .jb-tablebox { border: 0; border-radius: 14px; background: var(--ap-group); overflow: hidden; }
+#jobsPage .jb-table th {
+  background: transparent; color: var(--ap-3rd); font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  text-transform: none; border-bottom: .5px solid var(--ap-sep); padding: 10px 12px;
+}
+#jobsPage .jb-table td { border-bottom: .5px solid var(--ap-sep); padding: 10px 12px; vertical-align: top; }
+#jobsPage .jb-table tr:last-child td { border-bottom: 0; }
+#jobsPage .jb-table a { color: var(--ink); text-decoration: none; font-weight: 600; }
+#jobsPage .jb-table a:hover { color: var(--ap-blue); }
+#jobsPage .jb-table tbody tr:hover td { background: color-mix(in oklab, var(--ink) 3%, transparent); }
+#jobsPage .jb-status, #jobsPage .jb-locpick select, #jobsPage .jb-field select {
+  appearance: none; -webkit-appearance: none; border: 0 !important; border-radius: 7px !important;
+  background: var(--ap-fill) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='14' viewBox='0 0 10 14' fill='none' stroke='%23999' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 5l3-3 3 3M2 9l3 3 3-3'/%3E%3C/svg%3E") no-repeat right 8px center !important;
+  padding: 4px 26px 4px 10px !important; min-height: 26px; font-family: inherit; font-size: 12px !important; color: var(--ink) !important;
+}
+#jobsPage .jb-sent-inline { background: transparent; color: var(--ap-blue); padding: 4px 0; min-height: 0; font-weight: 600; font-size: 12px; }
+#jobsPage .jb-sent-inline:hover { background: transparent; text-decoration: underline; }
+#jobsPage .feed-filter .ff-btn {
+  border: 0; border-radius: 999px; background: var(--ap-fill); color: var(--ink); font-family: inherit; font-size: 12px; padding: 4px 12px;
+}
+#jobsPage .feed-filter .ff-btn.on { background: var(--ink); color: var(--bg); }
+#jobsPage .jb-add > summary, #jobsPage .jb-details > summary { color: var(--ap-blue); font-size: 13px; }
+#jobsPage .jb-toast, .jb-toast { border-radius: 999px; }
+@media (max-width: 700px) { #jobsPage .jb-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* drafts on disk are buttons (.jb-open), not links - same row treatment */
+#jobsPage .jb-mats .jb-open {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
+  padding: 9px 14px; border: 0; background: transparent; color: var(--ink); text-align: left;
+  text-decoration: none; font-family: inherit; font-size: 13px; cursor: pointer;
+}
+#jobsPage .jb-mats .jb-open::after { content: "\203A"; color: var(--ap-3rd); font-size: 18px; line-height: 1; }
+#jobsPage .jb-mats .jb-open:hover { background: color-mix(in oklab, var(--ink) 5%, transparent); color: var(--ink); }
+#jobsPage .jb-btn.jb-sent-inline {
+  display: inline-block; margin-top: 4px; padding: 3px 0; min-height: 0; border-radius: 0;
+  background: transparent; color: var(--ap-blue); font-size: 12px; font-weight: 600;
+}
+#jobsPage .jb-btn.jb-sent-inline:hover { background: transparent; text-decoration: underline; }
+#jobsPage .jb-runrow .jb-btn { white-space: nowrap; }

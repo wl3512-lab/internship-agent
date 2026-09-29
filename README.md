@@ -107,6 +107,17 @@ launchd:
 python3 scripts/intern_scout.py && python3 scripts/intern_mail.py && python3 scripts/intern_report.py
 ```
 
+### The planner page
+
+`ui/internships.js` and `ui/internships.css` are the Internships page and the
+résumé chat from the Today planner: the five sections (Needs you, Ready to
+send, Applied, Every posting, Notes, Log), "I submitted it" on every posting,
+and a docked chat that tailors a résumé to one job. The planner loads them from
+this clone, the same way its Python imports `scripts/`, so a pull updates both.
+They expect the planner's state server on `127.0.0.1:8765` (`/internships`,
+`/internships/chat`, `/internships/fill`, `/internships/run`); without it the
+page shows the last copy it cached and says so.
+
 ## Scripts
 
 | | |
