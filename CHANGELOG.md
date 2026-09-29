@@ -1,6 +1,12 @@
 # Changelog
 
 ## Unreleased
+- Designed résumés: set `resume_design` in the profile to the HTML print
+  source of your designed résumé and tailored résumés come out in that layout
+  (its fonts, stylesheet, numbered sections, tool chips), still one page. The
+  parser reads designed layouts too: numbered headings ("01 EDUCATION"), a
+  multi-line masthead, uppercase skill labels, chip rows, season dates.
+- PDFs print with a font time budget, so web fonts load before Chrome prints.
 - The planner's Internships page and résumé chat now live here, in `ui/`, and
   the planner loads them from the clone.
 - Apple-style skin: segmented sections, grouped rounded cards, Settings-style

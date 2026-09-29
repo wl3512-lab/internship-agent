@@ -204,6 +204,12 @@ p.body { margin: 0 0 1.5pt; }
 
 
 def render_html(plan):
+    # the user's own designed layout, when the profile points at one
+    import resume_design
+    design = resume_design.design_path()
+    if design:
+        with open(design, encoding="utf-8") as fh:
+            return resume_design.render(plan, pretty_dates, fh.read())
     r, esc = plan["resume"], lambda s: (s or "").replace("&", "&amp;").replace("<", "&lt;")
     L = ["<!doctype html><meta charset='utf-8'><title>%s</title><style>%s</style>"
          % (esc(r["name"]), CSS)]
@@ -310,7 +316,9 @@ def to_pdf(html_path, pdf_path):
     if not os.path.exists(CHROME):
         return "no Chrome to print with"
     try:
+        # the time budget lets web fonts (a designed layout's Google Fonts) arrive before printing
         subprocess.run([CHROME, "--headless", "--disable-gpu", "--no-pdf-header-footer",
+                        "--virtual-time-budget=8000",
                         "--print-to-pdf=" + pdf_path, "file://" + html_path],
                        capture_output=True, timeout=90)
     except (OSError, subprocess.SubprocessError) as exc:
