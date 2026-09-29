@@ -537,6 +537,13 @@ def run(dry_run=False, path=internships.PATH, log=print):
         "sources_failed": failed,
     }
     internships.apply({"postings": postings, "runs": [run_row]}, path)
+    # refresh "what you're looking for" with today's postings; a summary that
+    # fails to build must never cost the run
+    try:
+        import intern_search
+        intern_search.save(path=path)
+    except Exception as e:  # noqa: BLE001
+        log("search summary not refreshed: %s" % e)
     return {"added": fresh, "seen": len(postings), "failed": failed}
 
 

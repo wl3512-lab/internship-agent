@@ -695,12 +695,58 @@
     return box;
   }
 
+  // ── Looking for: what the agent hunts for, from her own profile ─────
+  /* Built by scripts/intern_search.py (saved after every scout run) so she
+     can check the agent is after the right thing - and fix the profile if
+     not. Every line is something she recorded or the agent actually found. */
+  function paneSearch() {
+    var box = el("div", "jb-pane jb-search");
+    var s = state.profile && state.profile.search;
+    if (!s) {
+      box.appendChild(el("p", "jb-empty", "The agent hasn’t written this yet. It appears after the next run, or run: python3 scripts/intern_search.py --save"));
+      return box;
+    }
+    function group(title, rows) {
+      rows = rows.filter(function (r) { return r && r[1]; });
+      if (!rows.length) return;
+      box.appendChild(el("h3", "jb-s-h", title));
+      var g = el("div", "jb-s-group");
+      rows.forEach(function (r) {
+        var row = el("div", "jb-s-row");
+        if (r[0]) row.appendChild(el("span", "jb-s-k", r[0]));
+        row.appendChild(el("span", "jb-s-v", r[1]));
+        g.appendChild(row);
+      });
+      box.appendChild(g);
+    }
+    function counts(pairs, names) {
+      return (pairs || []).map(function (kv) { return (names && names[kv[0]] || kv[0]) + " " + kv[1]; }).join(" · ");
+    }
+    if (s.headline) box.appendChild(el("p", "jb-s-lede", s.headline));
+    group("What", [["Kinds", (s.kinds || []).join("\n")], ["Work", (s.fields || []).join("\n")],
+                   ["Live now", counts(s.fields_found)]]);
+    group("Where", [["In order", (s.where || []).join("  ›  ")], ["Based", s.based],
+                    ["Live now", counts(s.where_found, { unknown: "Unclear", us: "US", other: "Other",
+                                                         vancouver: "Vancouver", canada: "Canada", remote: "Remote" })]]);
+    group("When", [["Graduating", s.graduating], ["School", s.school],
+                   ["Terms", (s.terms || []).map(function (t) { return t[0] + " (" + t[1] + ")"; }).join(" · ")]]);
+    var v = (s.visa && s.visa.rows || []).map(function (r) { return [r.where, r.text]; });
+    (s.visa && s.visa.notes || []).forEach(function (n) { v.push(["", n]); });
+    group("Visa and work authorization", v);
+    group("Ruled out", (s.blocked || []).map(function (b) { return [b[0], b[1] + " posting" + (b[1] === 1 ? "" : "s")]; }));
+    group("Watching", (s.sources || []).map(function (x) { return ["", x]; }));
+    box.appendChild(el("p", "jb-hint", "Something wrong here? It comes from your profile. Tell the agent in Notes, or rerun internship-setup." +
+      (s.generated_at ? " Updated " + fmtDate(s.generated_at) + "." : "")));
+    return box;
+  }
+
   // ── shell ────────────────────────────────────────────────────────────
   var TABS = [
     ["needs", "Needs you",     paneNeeds,  function () { return state.asks.filter(function (a) { return a.status !== "answered"; }).length; }],
     ["ready", "Ready to send", paneReady,  function () { return state.postings.filter(function (p) { return p.status === "ready"; }).length; }],
     ["applied", "Applied",     paneApplied, function () { return state.postings.filter(function (p) { return SENT.indexOf(p.status) >= 0; }).length; }],
     ["all",   "Every posting", paneAll,    function () { return state.postings.filter(function (p) { return ACTIVE[p.status]; }).length; }],
+    ["search", "Looking for",  paneSearch, function () { return 0; }],
     ["notes", "Notes",         paneNotes,  function () { return state.notes.filter(function (n) { return n.status === "new"; }).length; }],
     ["log",   "Log",           paneLog,    function () { return 0; }]
   ];

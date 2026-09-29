@@ -8,6 +8,10 @@
 - Résumé chat is a 360px docked panel that moves the page over instead of
   covering half of it; long pasted job descriptions collapse to five lines.
 - "I submitted it" on every posting in Every posting, not only on Ready cards.
+- Looking for: `scripts/intern_search.py` sums up what the agent hunts for -
+  kinds of work, where in order, when, internship vs campus job, and what the
+  visa situation means per country - from the profile, watchlist and tracker.
+  Saved to the tracker after every scout run and shown as its own tab.
 
 ## 0.2.0
 - US work eligibility reads the user's own recorded answer to "authorized to

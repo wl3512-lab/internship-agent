@@ -118,6 +118,10 @@ They expect the planner's state server on `127.0.0.1:8765` (`/internships`,
 `/internships/chat`, `/internships/fill`, `/internships/run`); without it the
 page shows the last copy it cached and says so.
 
+The **Looking for** tab reads `profile.search` from the tracker, which
+`scripts/intern_search.py --save` writes (the scout does it after every run).
+Run it without `--save` to print the same summary in a terminal.
+
 ## Scripts
 
 | | |
