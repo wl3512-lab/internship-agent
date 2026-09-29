@@ -71,6 +71,10 @@ class SearchSummaryTests(unittest.TestCase):
         search.save(self.s, path=path)
         self.assertEqual(internships.load(path)["profile"]["search"]["where"], self.s["where"])
 
+    def test_graduation_uses_their_exact_form_answer(self):
+        p = dict(PROFILE, declarations=dict(PROFILE["declarations"], grad_form_answer="May 2029"))
+        self.assertEqual(search.build(profile=p, data=DATA, watch=[], today=DAY)["graduating"], "May 2029")
+
     def test_text_reads_as_sentences(self):
         t = search.text(self.s)
         self.assertIn("Where, in order: Vancouver > Remote > United States", t)

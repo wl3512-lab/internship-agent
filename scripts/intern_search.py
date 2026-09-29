@@ -108,7 +108,9 @@ def build(profile=None, data=None, watch=None, today=None):
         where.append("United States")
     by_group = collections.Counter((p.get("location_group") or "unknown") for p in live)
 
-    grad = " ".join(str(profile.get(k) or "") for k in ("grad_term", "grad_year")).strip()
+    # the exact answer they gave for forms ("May 2029") beats the term the setup stored
+    grad = str((profile.get("declarations") or {}).get("grad_form_answer") or "").strip() or \
+        " ".join(str(profile.get(k) or "") for k in ("grad_term", "grad_year")).strip()
     blocked = collections.Counter()
     for p in postings:
         note = str(p.get("eligibility_note") or "")
