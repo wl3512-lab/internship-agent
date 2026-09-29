@@ -9,7 +9,7 @@
   list, instead of reporting a failure.
 - Starter watchlist: 31 design and tech companies with verified boards.
 - `intern_profile.py --check` no longer passes a placeholder résumé.
-- Test workflow for GitHub Actions prepared (added once the token has workflow scope).
+- Tests run on GitHub Actions (Python 3.9, 3.11, 3.12).
 
 ## 0.1.0
 - First release: scout, mail scan, ranking, reorder-only tailoring, form
