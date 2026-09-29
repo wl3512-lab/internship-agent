@@ -37,7 +37,12 @@ In Claude Code:
 
 Then run `/internship-setup`. Claude interviews you once (résumé, school,
 graduation year, where you can work, where you want to work) and writes your
-profile. After that, `/internships` runs the agent.
+profile, and offers a starter watchlist of 31 design and tech companies with
+verified job boards (`examples/watchlist.example.json`). After that,
+`/internships` runs the agent.
+
+To update: `/plugin marketplace update internship-agent`, then reinstall the
+plugin. Your data is untouched by updates.
 
 ## Requirements
 
@@ -131,6 +136,19 @@ python3 scripts/intern_scout.py && python3 scripts/intern_mail.py && python3 scr
 - Location matching uses the place names you give it, plus built-in
   recognition of the US. Anywhere else not in your tiers is flagged as maybe
   needing a visa, never hidden.
+
+## Running it from a clone
+
+If you would rather not install it as a plugin, clone it and point the scripts
+at your data folder:
+
+```bash
+git clone https://github.com/wl3512-lab/internship-agent ~/internship-agent
+python3 ~/internship-agent/scripts/intern_profile.py --check
+```
+
+A planner can then import `~/internship-agent/scripts` and stay current with
+`git -C ~/internship-agent pull --ff-only`.
 
 ## Tests
 

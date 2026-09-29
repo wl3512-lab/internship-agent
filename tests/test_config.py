@@ -35,6 +35,11 @@ class PlacesTests(unittest.TestCase):
         self.assertTrue(config.works_in_us({"work_authorization": {"us": "CPT available - no sponsorship needed"}}))
         self.assertFalse(config.works_in_us({"work_authorization": {"us": "would need H-1B sponsorship"}}))
         self.assertTrue(config.works_in_us({}))
+        # their own recorded form answer outranks their free-text description
+        self.assertFalse(config.works_in_us({"declarations": {"requires_sponsorship": "Yes"},
+                                             "work_authorization": {"us": "citizen"}}))
+        self.assertTrue(config.works_in_us({"declarations": {"requires_sponsorship": "No"},
+                                            "work_authorization": {"us": "needs a visa"}}))
         notes = scout.eligibility_notes({"work_authorization": {"us": "would need sponsorship"}})
         self.assertIn("sponsorship", notes["us"])
 

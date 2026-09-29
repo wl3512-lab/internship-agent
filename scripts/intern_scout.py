@@ -493,8 +493,11 @@ def run(dry_run=False, path=internships.PATH, log=print):
     grad_year = profile.get("grad_year")
 
     if not watchlist:
-        log("No watchlist at %s - nothing to search." % WATCHLIST)
-        return {"added": 0, "seen": 0, "failed": ["watchlist is empty"]}
+        log("Your watchlist is empty. Add companies with:  python3 watchlist.py add \"Company\"\n"
+            "or start from the example list:  cp %s %s" % (
+                os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                             "examples", "watchlist.example.json"), WATCHLIST))
+        return {"added": 0, "seen": 0, "failed": []}
 
     log("Scanning %d companies for: %s" % (len(watchlist), ", ".join(sorted(wanted))))
     raw, failed = scan(watchlist, wanted, log)

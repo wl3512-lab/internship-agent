@@ -119,11 +119,13 @@ def check():
     import resume_model
     p = load()
     missing = [(k, why) for k, why in REQUIRED if not p.get(k)]
+    if p.get("resume_text") and len(p["resume_text"]) < 400:
+        missing.append(("resume_text", "looks like a placeholder - ingest the real PDF"))
     for k, why in missing:
         print("missing  %-20s %s" % (k, why))
     if not p.get("cover_letter_text"):
         print("optional cover_letter_text     without one, no cover letters are drafted")
-    if p.get("resume_text"):
+    if p.get("resume_text") and len(p["resume_text"]) >= 400:
         lost = resume_model.check()
         if lost:
             print("résumé   does not parse cleanly (%d lines unplaced). The quick tailor needs the "

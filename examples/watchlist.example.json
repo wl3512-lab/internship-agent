@@ -1,0 +1,157 @@
+[
+ {
+  "board": "greenhouse",
+  "company": "AbCellera",
+  "slug": "abcellera"
+ },
+ {
+  "board": "lever",
+  "company": "Active Theory",
+  "slug": "activetheory"
+ },
+ {
+  "board": "greenhouse",
+  "company": "Anthropic",
+  "slug": "anthropic"
+ },
+ {
+  "board": "greenhouse",
+  "company": "Aspect Biosystems",
+  "slug": "aspectbiosystems"
+ },
+ {
+  "board": "ashby",
+  "company": "Cohere",
+  "slug": "cohere"
+ },
+ {
+  "board": "ashby",
+  "company": "Dapper Labs",
+  "slug": "dapper"
+ },
+ {
+  "board": "greenhouse",
+  "company": "Deeplocal",
+  "slug": "deeplocal"
+ },
+ {
+  "board": "greenhouse",
+  "company": "Epic Games",
+  "slug": "epicgames"
+ },
+ {
+  "board": "greenhouse",
+  "company": "Faire",
+  "slug": "faire"
+ },
+ {
+  "board": "lever",
+  "company": "Fantasy",
+  "slug": "fantasy"
+ },
+ {
+  "board": "greenhouse",
+  "company": "Figma",
+  "slug": "figma"
+ },
+ {
+  "board": "greenhouse",
+  "company": "Hootsuite",
+  "slug": "hootsuite"
+ },
+ {
+  "board": "lever",
+  "company": "Instrument",
+  "slug": "instrument"
+ },
+ {
+  "board": "lever",
+  "company": "Kabam",
+  "slug": "kabam"
+ },
+ {
+  "board": "ashby",
+  "company": "Klue",
+  "slug": "klue"
+ },
+ {
+  "board": "greenhouse",
+  "company": "Later",
+  "slug": "later"
+ },
+ {
+  "board": "ashby",
+  "company": "Linear",
+  "slug": "linear"
+ },
+ {
+  "board": "ashby",
+  "company": "Midjourney",
+  "slug": "midjourney"
+ },
+ {
+  "board": "ashby",
+  "company": "Notion",
+  "slug": "notion"
+ },
+ {
+  "board": "ashby",
+  "company": "OpenAI",
+  "slug": "openai"
+ },
+ {
+  "board": "ashby",
+  "company": "Phoenix Labs",
+  "slug": "phoenix"
+ },
+ {
+  "board": "ashby",
+  "company": "Procurify",
+  "slug": "procurify"
+ },
+ {
+  "board": "ashby",
+  "company": "Replit",
+  "slug": "replit"
+ },
+ {
+  "board": "ashby",
+  "company": "Runway",
+  "slug": "runway"
+ },
+ {
+  "board": "greenhouse",
+  "company": "Scale AI",
+  "slug": "scaleai"
+ },
+ {
+  "board": "greenhouse",
+  "company": "Stripe",
+  "slug": "stripe"
+ },
+ {
+  "board": "ashby",
+  "company": "Thinkific",
+  "slug": "thinkific"
+ },
+ {
+  "board": "ashby",
+  "company": "Trulioo",
+  "slug": "trulioo"
+ },
+ {
+  "board": "greenhouse",
+  "company": "Unbounce",
+  "slug": "unbounce"
+ },
+ {
+  "board": "greenhouse",
+  "company": "Vercel",
+  "slug": "vercel"
+ },
+ {
+  "board": "lever",
+  "company": "Waabi",
+  "slug": "waabi"
+ }
+]

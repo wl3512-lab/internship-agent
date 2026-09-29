@@ -108,9 +108,11 @@ python3 "$S/intern_profile.py" --set email=sam@example.edu links.portfolio=https
 python3 "$S/intern_profile.py" --check
 ```
 
-Seed a watchlist if they name companies:
+Seed a watchlist: offer the starter list of 31 design and tech companies, and
+add any they name.
 
 ```bash
+cp "${CLAUDE_PLUGIN_ROOT}/examples/watchlist.example.json" ~/.internship-agent/watchlist.json
 python3 "$S/watchlist.py" add "Figma"
 ```
 

@@ -49,11 +49,27 @@ def places(profile=None):
 
 
 def works_in_us(profile=None):
-    """True unless the profile says US work needs sponsorship it cannot get."""
+    """Can the user take a US job without the employer sponsoring a visa?
+
+    Their own recorded form answers decide first; then the words they gave for
+    US work authorization; with neither, assume yes rather than hide jobs.
+    """
     profile = profile if profile is not None else load_profile()
+    decl = profile.get("declarations") or {}
+    if str(decl.get("requires_sponsorship", "")).strip().lower() in ("yes", "no"):
+        return str(decl["requires_sponsorship"]).strip().lower() == "no"
+    if str(decl.get("us_work_authorized", "")).strip().lower() == "no":
+        return False
     auth = (profile.get("work_authorization") or {}).get("us")
-    return auth is None or not re.search(r"\bnot\b|\bno\b|sponsor", str(auth), re.I) or \
-        bool(re.search(r"no (?:employer )?sponsorship needed|cpt|opt|citizen|green card", str(auth), re.I))
+    if auth is None:
+        return True
+    text = str(auth).lower()
+    if re.search(r"no (?:employer )?sponsorship (?:needed|required)|citizen|green card|"
+                 r"permanent resident|\bcpt\b|\bopt\b", text):
+        return True
+    if re.search(r"sponsor|visa|h-1b|\btn\b|not authori[sz]ed|permit", text):
+        return False
+    return True
 
 
 def school_rx(profile=None):
