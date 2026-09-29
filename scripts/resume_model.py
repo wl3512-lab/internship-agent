@@ -141,9 +141,11 @@ def parse(text=None):
         s = line.strip()
         if not s:
             continue
-        m = re.match(r"^(Design|Research|Technical|Languages)\s+(.*)$", s, re.I)
+        m = re.match(r"^(Design|Research|Technical|Languages|AI|Tools)\s+(.*)$", s, re.I)
         if m:
-            skills[m.group(1).capitalize()] = [x.strip() for x in m.group(2).split(",") if x.strip()]
+            label = m.group(1)
+            label = "AI" if label.upper() == "AI" else label.capitalize()
+            skills[label] = [x.strip() for x in m.group(2).split(",") if x.strip()]
         elif skills:
             skills[list(skills)[-1]][-1] += " " + s
 

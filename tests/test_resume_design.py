@@ -38,6 +38,7 @@ Built a room-scale light piece that responds to footsteps.
 04 SKILLS & TOOLS
 DESIGN Figma, prototyping, design systems
 TECHNICAL JavaScript, React, Python
+AI Claude Code, Codex, agent skills
 """
 
 DESIGN_HTML = """<!DOCTYPE html><html><head><title>x</title>
@@ -82,6 +83,10 @@ class DesignedParseTests(unittest.TestCase):
 
     def test_uppercase_skill_labels(self):
         self.assertEqual(self.r["skills"]["Design"], ["Figma", "prototyping", "design systems"])
+
+    def test_an_ai_row_is_its_own_group_not_glued_onto_technical(self):
+        self.assertEqual(self.r["skills"]["AI"], ["Claude Code", "Codex", "agent skills"])
+        self.assertEqual(self.r["skills"]["Technical"], ["JavaScript", "React", "Python"])
 
 
 class DesignedRenderTests(unittest.TestCase):
