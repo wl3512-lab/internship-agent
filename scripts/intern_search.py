@@ -125,6 +125,7 @@ def build(profile=None, data=None, watch=None, today=None):
     return {
         "generated_at": (today or datetime.datetime.now(datetime.timezone.utc)).isoformat(timespec="seconds"),
         "headline": profile.get("title") or "",
+        "name": profile.get("name") or "",   # names downloaded PDFs, e.g. Sam_Rivera_<job>_resume.pdf
         "based": profile.get("based") or profile.get("city") or "",
         "kinds": kinds,
         "fields": fields,

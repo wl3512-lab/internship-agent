@@ -169,9 +169,9 @@ def answer_for(label, profile, posting):
 
     # before the "major" rule below, which would answer "Major GPA" with the user's degree
     if "gpa" in l or "grade point" in l:
-        # From the user's transcript. The résumé's 3.94 is the user's MAJOR GPA; a plain
-        # "GPA" field means cumulative (3.59), and putting 3.94 there is a
-        # number the user's transcript would contradict.
+        # From the user's transcript. A résumé often shows the MAJOR GPA (say 3.85);
+        # a plain "GPA" field means cumulative (say 3.42), and putting 3.85 there
+        # is a number the user's transcript would contradict.
         t = profile.get("transcript") or {}
         if "major" in l:
             if t.get("gpa_major"):
@@ -304,7 +304,7 @@ def build_plan(posting_id, path=internships.PATH):
             continue
         if "input_file" in kinds and not (isinstance(value, str) and os.path.isfile(value)):
             # a transcript or work sample: only a real file answers an upload,
-            # and "New York University" is not one
+            # and a school name is not one
             (blocked if required else manual).append({
                 "label": label, "required": required, "options": [],
                 "why": "An upload I don't have - attach it yourself."})

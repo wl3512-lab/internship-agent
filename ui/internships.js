@@ -10,8 +10,8 @@
    Two things had to change. The artifact was backed by a Claude artifact DB
    and filled by an agent; nothing here has either, so it stores to
    localStorage and she can add a posting by hand - otherwise the page is
-   empty forever. And its priority order was Vancouver-first, which is not
-   where she is, so it is New York, then remote, then the rest of the US.
+   empty forever. Location order comes from the user's own profile
+   (places), not from anything fixed here.
 
    The record shape, for whatever fills this later:
      posting  {id, role, company, url, apply_url, location, location_group,
@@ -41,9 +41,9 @@
   var LOC_GROUP = { vancouver: "vancouver", canada: "canada", remote_canada: "remote",
                     remote_global: "remote", remote_us: "remote", us: "us", other: "other",
                     unknown: "other" };
-  /* Vancouver, then remote. She is a Canadian citizen living in BC, so a US
-     role is not off the table but it costs a visa - the scout says so in
-     eligibility_note and these sort below anything that does not. */
+  /* Home region, then remote. A role that may need a visa is not off the
+     table, but the scout says so in eligibility_note and it sorts below
+     anything that does not. */
   var PRI = { vancouver: 1, canada: 1, remote_canada: 1, remote_global: 1 };
   var ACTIVE = { "new": 1, needs_info: 1, ready: 1, submitted: 1, interview: 1, offer: 1 };
   var FILTERS = [["active", "Active"], ["all", "All"], ["submitted", "Sent"], ["skipped", "Passed"]];
@@ -874,8 +874,9 @@
       if (!r.ok) throw new Error("download failed (" + r.status + ")");
       // named for the job here: a cross-origin fetch cannot read Content-Disposition,
       // and twenty files called resume.pdf in Downloads help nobody
+      var who = ((state.profile.search || {}).name || "").trim().replace(/[^\w.-]+/g, "_");
       var name = /^(resume|cover-letter)\.pdf$/.test(f.name)
-        ? "Lucy_Liu_" + f.folder.slice(0, 60) + "_" + f.name : f.name;
+        ? (who ? who + "_" : "") + f.folder.slice(0, 60) + "_" + f.name : f.name;
       return r.blob().then(function (b) { return { blob: b, name: name }; });
     }).then(function (x) {
       var a = document.createElement("a");

@@ -150,7 +150,7 @@ def parse(text=None):
     # a designed masthead spreads contact over several lines (portfolio link,
     # email and phone, LinkedIn and city) with a one-line summary before them
     contact_rx = re.compile(r"@|linkedin|https?://|\.(?:com|xyz|io|dev|me|org|net)\b|\(\d{3}\)", re.I)
-    bare_site = re.compile(r"[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}(?:/\S*)?", re.I)   # "lucyliu.xyz", any ending
+    bare_site = re.compile(r"[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}(?:/\S*)?", re.I)   # "samrivera.example", any ending
 
     def is_contact(line):
         return bool(contact_rx.search(line) or bare_site.fullmatch(line.replace("\u2197", "").strip()))
