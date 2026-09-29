@@ -51,15 +51,20 @@ def places(profile=None):
 def works_in_us(profile=None):
     """Can the user take a US job without the employer sponsoring a visa?
 
-    Their own recorded form answers decide first; then the words they gave for
-    US work authorization; with neither, assume yes rather than hide jobs.
+    Their own recorded answer to "are you authorized to work in the US" decides
+    first; then the words they gave for US work authorization; with neither,
+    assume yes rather than hide jobs.
+
+    "Will you require sponsorship" is deliberately NOT used: a student on F-1
+    answers it Yes (for the full-time job after OPT) while an internship on CPT
+    needs no sponsorship at all. Reading it here would flag every US internship
+    for exactly the students this is most often used by.
     """
     profile = profile if profile is not None else load_profile()
     decl = profile.get("declarations") or {}
-    if str(decl.get("requires_sponsorship", "")).strip().lower() in ("yes", "no"):
-        return str(decl["requires_sponsorship"]).strip().lower() == "no"
-    if str(decl.get("us_work_authorized", "")).strip().lower() == "no":
-        return False
+    answer = str(decl.get("us_work_authorized", "")).strip().lower()
+    if answer in ("yes", "no"):
+        return answer == "yes"
     auth = (profile.get("work_authorization") or {}).get("us")
     if auth is None:
         return True

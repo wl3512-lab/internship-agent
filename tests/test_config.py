@@ -35,11 +35,14 @@ class PlacesTests(unittest.TestCase):
         self.assertTrue(config.works_in_us({"work_authorization": {"us": "CPT available - no sponsorship needed"}}))
         self.assertFalse(config.works_in_us({"work_authorization": {"us": "would need H-1B sponsorship"}}))
         self.assertTrue(config.works_in_us({}))
-        # their own recorded form answer outranks their free-text description
-        self.assertFalse(config.works_in_us({"declarations": {"requires_sponsorship": "Yes"},
+        # their own recorded "authorized to work in the US" outranks their description
+        self.assertFalse(config.works_in_us({"declarations": {"us_work_authorized": "No"},
                                              "work_authorization": {"us": "citizen"}}))
-        self.assertTrue(config.works_in_us({"declarations": {"requires_sponsorship": "No"},
-                                            "work_authorization": {"us": "needs a visa"}}))
+        self.assertTrue(config.works_in_us({"declarations": {"us_work_authorized": "Yes"},
+                                            "work_authorization": {"us": "needs a visa later"}}))
+        # an F-1 student on CPT: authorized now, sponsorship only later - US internships stay open
+        self.assertTrue(config.works_in_us({"declarations": {"us_work_authorized": "Yes",
+                                                             "requires_sponsorship": "Yes"}}))
         notes = scout.eligibility_notes({"work_authorization": {"us": "would need sponsorship"}})
         self.assertIn("sponsorship", notes["us"])
 
