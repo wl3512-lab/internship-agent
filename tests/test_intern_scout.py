@@ -81,6 +81,19 @@ class TestFilter(unittest.TestCase):
     def test_only_her_fields_match(self):
         self.assertEqual(scout.match_interests("Design Intern", "", {"ai"}), [])
 
+    def test_words_inside_other_words_do_not_count(self):
+        # "opportunity" is not Unity, "promotion" is not motion, "studios" is not iOS
+        body = ("the opportunity to join a strong community; promotion "
+                "materials for our studios and a deluxe lab")
+        self.assertEqual(scout.match_interests("Laboratory Operations Intern", body,
+                                               {"creative", "design", "software"}), [])
+
+    def test_stems_still_reach_longer_words(self):
+        self.assertEqual(scout.match_interests("Creative Technologist Intern", "", {"creative"}),
+                         [("creative", 2)])
+        self.assertEqual(scout.match_interests("Intern", "rapid prototyping in Figma", {"design"}),
+                         [("design", 1)])
+
 
 class TestScore(unittest.TestCase):
     def test_vancouver_ai_role_tops_out(self):
