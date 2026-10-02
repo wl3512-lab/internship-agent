@@ -44,9 +44,18 @@ def parse(v):
     return d if d.tzinfo else d.replace(tzinfo=dt.timezone.utc)
 
 
-def days_until(v):
+def days_until(v, today=None):
+    """Calendar days until a deadline, counted where the user is.
+
+    A date-only deadline is open all of that day. Measured from midnight UTC,
+    "2026-10-01" read -2 at 10pm on October 1 in New York, listing a posting
+    that closed that night as two days gone.
+    """
     d = parse(v)
-    return None if not d else (d - now()).days
+    if not d:
+        return None
+    day = d.date() if len(str(v).strip()) == 10 else d.astimezone().date()
+    return (day - (today or dt.date.today())).days
 
 
 def blocked(p):
