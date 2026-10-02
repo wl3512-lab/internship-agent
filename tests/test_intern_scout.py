@@ -81,6 +81,19 @@ class TestFilter(unittest.TestCase):
     def test_only_her_fields_match(self):
         self.assertEqual(scout.match_interests("Design Intern", "", {"ai"}), [])
 
+    def test_words_inside_other_words_do_not_count(self):
+        # "opportunity" is not Unity, "promotion" is not motion, "studios" is not iOS
+        body = ("the opportunity to join a strong community; promotion "
+                "materials for our studios and a deluxe lab")
+        self.assertEqual(scout.match_interests("Laboratory Operations Intern", body,
+                                               {"creative", "design", "software"}), [])
+
+    def test_stems_still_reach_longer_words(self):
+        self.assertEqual(scout.match_interests("Creative Technologist Intern", "", {"creative"}),
+                         [("creative", 2)])
+        self.assertEqual(scout.match_interests("Intern", "rapid prototyping in Figma", {"design"}),
+                         [("design", 1)])
+
 
 class TestScore(unittest.TestCase):
     def test_vancouver_ai_role_tops_out(self):
@@ -747,7 +760,7 @@ class TestCampusJobs(unittest.TestCase):
     not have, which is that many are for graduate students only.
     """
 
-    def _p(self, role, company="New York University On Campus", **kw):
+    def _p(self, role, company="Northgate University On Campus", **kw):
         base = {"id": "x", "role": role, "company": company, "status": "new",
                 "requirements": "", "eligibility_note": "", "fit": 2}
         base.update(kw)
@@ -807,8 +820,8 @@ class TestOneSchoolManyCampuses(unittest.TestCase):
         return base
 
     def test_her_campus_counts(self):
-        self.assertTrue(odds.is_campus(self._p("New York University On Campus")))
-        self.assertFalse(odds.is_other_campus(self._p("New York University On Campus")))
+        self.assertTrue(odds.is_campus(self._p("Northgate University On Campus")))
+        self.assertFalse(odds.is_other_campus(self._p("Northgate University On Campus")))
 
     def test_the_other_campuses_do_not(self):
         for company in ["Northgate Doha On-Campus Student Employment",

@@ -377,11 +377,29 @@ def match_interests(role, body, wanted):
     for field, words in INTERESTS.items():
         if field not in wanted:
             continue
-        if any(w in hay_title for w in words):
+        if _interest_re(field).search(hay_title):
             hits.append((field, 2))
-        elif any(w in hay_body for w in words):
+        elif _interest_re(field).search(hay_body):
             hits.append((field, 1))
     return hits
+
+
+_INTEREST_RES = {}
+
+
+def _interest_re(field):
+    """A field's words, each anchored to the start of a word.
+
+    Plain substring matching read "opportunity" and "community" as Unity and
+    "promotion" as motion, which scored every biotech lab co-op in Vancouver
+    as creative tech, fit 4, top of the queue. The start is anchored and the
+    end is not, so stems like "prototyp" and "creative techno" still reach
+    "prototyping" and "creative technologist".
+    """
+    if field not in _INTEREST_RES:
+        _INTEREST_RES[field] = re.compile(
+            "|".join(r"(?<!\w)" + re.escape(w) for w in INTERESTS[field]))
+    return _INTEREST_RES[field]
 
 
 FIELD_WORDS = {"creative": "creative tech", "design": "design",
@@ -537,6 +555,13 @@ def run(dry_run=False, path=internships.PATH, log=print):
         "sources_failed": failed,
     }
     internships.apply({"postings": postings, "runs": [run_row]}, path)
+    # refresh "what you're looking for" with today's postings; a summary that
+    # fails to build must never cost the run
+    try:
+        import intern_search
+        intern_search.save(path=path)
+    except Exception as e:  # noqa: BLE001
+        log("search summary not refreshed: %s" % e)
     return {"added": fresh, "seen": len(postings), "failed": failed}
 
 

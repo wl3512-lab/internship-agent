@@ -26,6 +26,7 @@ SECTIONS = ["EDUCATION", "EXPERIENCE", "SELECTED PROJECTS", "SKILLS & TOOLS"]
 # A dated line starts an entry; the line under it is the organisation.
 DATE_RE = re.compile(
     r"(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\.?\s*\d{4}"
+    r"|\b(?:Spring|Summer|Fall|Autumn|Winter)\b(?:\s+\d{4})?"
     r"|\b(?:19|20)\d{2}\b|Present|Expected\s+\w+\s+\d{4})", re.I)
 # The trailing line of tools under a project, which is a list not a sentence.
 TOOLS_RE = re.compile(r"^[\w+#./ ]+(?: · [\w+#./() ]+){2,}$")
@@ -39,10 +40,18 @@ def load_text():
         return ""
 
 
+# Designed layouts number their sections ("01 EDUCATION"); the number is decoration.
+SECTION_NUM_RE = re.compile(r"^\d{1,2}\s+")
+
+
+def _section_name(line):
+    return SECTION_NUM_RE.sub("", line.strip()).upper()
+
+
 def _split_sections(lines):
     out, current = {"HEADER": []}, "HEADER"
     for line in lines:
-        hit = next((s for s in SECTIONS if line.strip().upper() == s), None)
+        hit = next((s for s in SECTIONS if _section_name(line) == s), None)
         if hit:
             current = hit
             out[current] = []
@@ -68,6 +77,18 @@ def _looks_like_heading(line, kind):
         return "\u00b7" in line and TITLE_RE.match(line) is not None
     # experience headings are "Role Title   Dates", the org is the line under
     return TITLE_RE.match(line) is not None and line.count(",") < 2
+
+
+def _looks_like_tags(line, cur):
+    """A row of tool chips: follows a finished bullet, is not a sentence."""
+    if not cur["body"] or cur["tools"] or not cur["body"][-1].rstrip().endswith("."):
+        return False
+    if len(line) > 220 or line.endswith((".", ",", ";", ":")) or ", " in line or "; " in line:
+        return False
+    words = line.lower().split()
+    if set(words) & {"the", "and", "with", "a", "an", "of", "to", "for", "or", "in", "on", "by", "as"}:
+        return False   # a sentence, however short of punctuation
+    return len(words) >= 4
 
 
 def _entries(lines, kind="experience"):
@@ -97,6 +118,9 @@ def _entries(lines, kind="experience"):
             cur["org"] = stripped
         elif TOOLS_RE.match(stripped) and len(stripped) < 220:
             cur["tools"] = stripped
+        elif _looks_like_tags(stripped, cur):
+            # a designed résumé sets tools as space-separated chips, no " · "
+            cur["tools"] = stripped
         elif cur["body"] and (stripped[0].islower() or cur["body"][-1].rstrip().endswith((",", "-", ";"))):
             cur["body"][-1] += " " + stripped
         else:
@@ -117,16 +141,27 @@ def parse(text=None):
         s = line.strip()
         if not s:
             continue
-        m = re.match(r"^(Design|Research|Technical|Languages)\s+(.*)$", s)
+        m = re.match(r"^(Design|Research|Technical|Languages|AI|Tools)\s+(.*)$", s, re.I)
         if m:
-            skills[m.group(1)] = [x.strip() for x in m.group(2).split(",") if x.strip()]
+            label = m.group(1)
+            label = "AI" if label.upper() == "AI" else label.capitalize()
+            skills[label] = [x.strip() for x in m.group(2).split(",") if x.strip()]
         elif skills:
             skills[list(skills)[-1]][-1] += " " + s
 
+    # a designed masthead spreads contact over several lines (portfolio link,
+    # email and phone, LinkedIn and city) with a one-line summary before them
+    contact_rx = re.compile(r"@|linkedin|https?://|\.(?:com|xyz|io|dev|me|org|net)\b|\(\d{3}\)", re.I)
+    bare_site = re.compile(r"[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}(?:/\S*)?", re.I)   # "samrivera.example", any ending
+
+    def is_contact(line):
+        return bool(contact_rx.search(line) or bare_site.fullmatch(line.replace("\u2197", "").strip()))
+    contacts = [l.replace("\u2197", "").strip() for l in header[2:] if is_contact(l)]
     return {
         "name": header[0] if header else "",
         "tagline": header[1] if len(header) > 1 else "",
-        "contact": header[2] if len(header) > 2 else "",
+        "contact": " \u00b7 ".join(contacts) if len(contacts) > 1 else (header[2] if len(header) > 2 else ""),
+        "summary": next((l for l in header[2:] if not is_contact(l) and l.upper() != l), ""),
         "education": [l.strip() for l in sec.get("EDUCATION", []) if l.strip()],
         "experience": _entries(sec.get("EXPERIENCE", []), "experience"),
         "projects": _entries(sec.get("SELECTED PROJECTS", []), "projects"),
@@ -141,10 +176,11 @@ def check(text=None):
     worse than no parser, and it would never announce itself.
     """
     text = text if text is not None else load_text()
-    src = [l.strip() for l in text.splitlines() if l.strip() and l.strip().upper() not in SECTIONS]
+    src = [l.strip() for l in text.splitlines()
+           if l.strip() and _section_name(l) not in SECTIONS and l.strip() != "PORTFOLIO"]
     r = parse(text)
     got = " ".join(
-        [r["name"], r["tagline"], r["contact"]] + r["education"]
+        [r["name"], r["tagline"], r["contact"], r.get("summary", "")] + r["education"]
         + [e["title"] + " " + e["dates"] + " " + e["org"] + " " + " ".join(e["body"]) + " " + e["tools"]
            for e in r["experience"] + r["projects"]]
         + [k + " " + ", ".join(v) for k, v in r["skills"].items()])
