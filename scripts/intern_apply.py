@@ -41,7 +41,7 @@ PROFILE = config.PROFILE
 # Fields whose answer is a statement about the user's legal status. These are never
 # inferred, never defaulted, and block the plan until the user has answered them.
 DECLARATION_RE = re.compile(
-    r"legally authorized|work authorization|require sponsorship|visa status|"
+    r"legally authorized|work authorization|sponsorship|visa status|"
     r"right to work|employment eligibility|criminal|felony|convicted|"
     r"veteran|disability|ethnicity|race|gender", re.I)
 
@@ -59,17 +59,51 @@ DECLARED = [
      "ca_requires_sponsorship"),
     (re.compile(r"(?:eligible|authorized|entitled).{0,40}\bcanada\b", re.I),
      "ca_work_authorized"),
-    (re.compile(r"require sponsorship|sponsorship for an employment", re.I),
+    (re.compile(r"require (?:\w+ ){0,2}sponsorship|sponsorship for an employment", re.I),
      "requires_sponsorship"),
     (re.compile(r"legally authorized|right to work|employment eligibility|work authorization|"
                 r"legally entitled to work", re.I),
      "us_work_authorized"),
 ]
 
+# Most forms never name the country: "will you require sponsorship to work in
+# the country in which you are applying?" On a Toronto posting that country is
+# Canada, and answering it from the US declarations had a Canadian citizen
+# declaring they need sponsorship to work at home. The posting decides which
+# country the question is about, unless the question names the US itself.
+NAMES_US_RE = re.compile(r"(?i:united states)|\bU\.S\.|\bUSA\b")
+SPONSOR_RE = re.compile(r"sponsorship", re.I)
+AUTH_RE = re.compile(r"authori[sz]ed|eligible|entitled|right to work", re.I)
+CANADA_HINTS = {"canada", "british columbia", "ontario", "quebec", "alberta", "bc",
+                "toronto", "vancouver", "montreal", "montréal", "ottawa", "calgary"}
 
-def declared(label, profile):
+# The free-text follow-up under a yes/no status question ("please list the type
+# of support you may require") is not that question. A "Yes" pasted into it is
+# a misstatement, so it gets no declared answer at all.
+FOLLOW_UP_RE = re.compile(r"\bplease (?:list|describe|explain)\b|\blist the type\b", re.I)
+
+
+def posting_in_canada(posting):
+    if not posting:
+        return False
+    if re.search(r"\bcanada\b", posting.get("location") or "", re.I):
+        return True
+    group = posting.get("location_group")
+    return any(t.get("group") == group and CANADA_HINTS & {m.lower() for m in t.get("match", [])}
+               for t in config.places())
+
+
+def declared(label, profile, posting=None):
     """The user's own answer to a status question, if they have given one."""
     answers = profile.get("declarations") or {}
+    label = label or ""
+    if FOLLOW_UP_RE.search(label):
+        return None
+    if posting_in_canada(posting) and not NAMES_US_RE.search(label):
+        if SPONSOR_RE.search(label):
+            return answers.get("ca_requires_sponsorship")
+        if AUTH_RE.search(label):
+            return answers.get("ca_work_authorized")
     for pattern, key in DECLARED:
         if pattern.search(label or ""):
             return answers.get(key)
@@ -268,7 +302,7 @@ def build_plan(posting_id, path=internships.PATH):
             # The user has answered some of these themselves, once, and those answers
             # are reused verbatim. Anything the user has not answered still blocks -
             # the gate opens for a declaration the user made, never for one inferred.
-            decl = declared(label, profile)
+            decl = declared(label, profile, posting)
             if decl is not None:
                 picked = match_option(decl, options) if options else decl
                 if picked is not None:
@@ -284,7 +318,7 @@ def build_plan(posting_id, path=internships.PATH):
         # to answer; it is deliberately narrow, and "are you eligible to work
         # in Canada" did not trip it - so a question the user had already answered
         # was being handed back to the user.
-        value = declared(label, profile)
+        value = declared(label, profile, posting)
         if value is None:
             value = answer_for(label, profile, posting)
         if ("resume" in label.lower() or "cv" in label.lower()) and not value:

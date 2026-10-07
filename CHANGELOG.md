@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- Status questions that never name a country ("sponsorship to work in the
+  country in which you are applying") are answered for the posting's country:
+  a Toronto posting reads the Canada declarations, not the US ones, unless the
+  question names the US. "Require employer sponsorship" is now recognised, and
+  free-text follow-ups ("please list the type of support") get no yes/no hint.
 - `resume_tailor.py --keep "Project"` pins a project onto the tailored résumé
   when the named-tool ranking misses it (a game project scores zero against a
   game design posting that names Unity and Lua). Pinned projects lead, survive
