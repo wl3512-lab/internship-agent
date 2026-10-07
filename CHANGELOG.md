@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+- Odds: a posting outside the places the user can work is at best a long shot,
+  however well the skills match (Pinterest Dublin and Zurich scored strong).
+  A title that names a graduate program (Master's, PhD, doctoral, MBA) is a
+  wall even when the description left the eligibility note empty.
 - Status questions that never name a country ("sponsorship to work in the
   country in which you are applying") are answered for the posting's country:
   a Toronto posting reads the Canada declarations, not the US ones, unless the

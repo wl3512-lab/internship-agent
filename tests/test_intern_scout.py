@@ -306,6 +306,25 @@ class TestOdds(unittest.TestCase):
                         self.PROFILE, self.hers)
         self.assertEqual(a["band"], "blocked")
 
+    def test_a_graduate_title_is_a_wall_even_with_a_clean_note(self):
+        # Pinterest's "Master's Machine Learning Internship" scraped with no
+        # note and came out a real chance for an undergraduate
+        for role in ("Master's Machine Learning Internship 2027 (USA)",
+                     "PhD Intern, Data Science (2027)"):
+            a = odds.assess(self._p(role=role), self.PROFILE, self.hers)
+            self.assertEqual(a["band"], "blocked", role)
+        self.assertNotEqual(odds.assess(self._p(role="Scrum Master Intern"),
+                                        self.PROFILE, self.hers)["band"], "blocked")
+
+    def test_outside_her_places_is_at_best_a_long_shot(self):
+        # Pinterest Dublin and Zurich scored strong on skills alone
+        reqs = "Python, React, Figma, user interviews, WCAG."
+        home = odds.assess(self._p(requirements=reqs), self.PROFILE, self.hers)
+        away = odds.assess(self._p(requirements=reqs, location_group="other"),
+                           self.PROFILE, self.hers)
+        self.assertEqual(home["band"], "strong")
+        self.assertEqual(away["band"], "long shot")
+
     def test_cs_only_program_blocks_but_or_equivalent_does_not(self):
         hard = self._p(requirements="Currently enrolled in a Computer Science degree program.")
         soft = self._p(requirements="Enrolled in a Computer Science program, or equivalent "
