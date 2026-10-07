@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+- `resume_tailor.py --keep "Project"` pins a project onto the tailored résumé
+  when the named-tool ranking misses it (a game project scores zero against a
+  game design posting that names Unity and Lua). Pinned projects lead, survive
+  the one-page trim, and the notes say they were kept on request.
 - Designed résumés: set `resume_design` in the profile to the HTML print
   source of your designed résumé and tailored résumés come out in that layout
   (its fonts, stylesheet, numbered sections, tool chips), still one page. The

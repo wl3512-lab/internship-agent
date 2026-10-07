@@ -18,6 +18,7 @@ never touched.
 
     python3 resume_tailor.py <posting-id>
     python3 resume_tailor.py <posting-id> --no-pdf
+    python3 resume_tailor.py <posting-id> --keep "Project name"
 """
 
 import argparse
@@ -110,7 +111,7 @@ def order_skills(skills, wanted):
     return out
 
 
-def build(posting_id, path=internships.PATH):
+def build(posting_id, path=internships.PATH, keep_titles=()):
     posting = next((p for p in internships.load(path)["postings"]
                     if p.get("id") == posting_id), None)
     if not posting:
@@ -153,6 +154,20 @@ def build(posting_id, path=internships.PATH):
         # leaving a short résumé - a gap reads as having less to show
         rest = [p for p in projects if p not in keep]
         keep = keep + rest[:KEEP_AT_MOST - len(keep)]
+    # The ranking only knows named tools, so a game project scores zero against
+    # a game design posting that names Unity and Lua. The user can pin what the
+    # vocabulary misses; pinned projects lead and survive the one-page trim.
+    pinned = []
+    for want in keep_titles or ():
+        hit = next((p for p in projects if want.lower() in p["entry"]["title"].lower()), None)
+        if hit is None:
+            return None, "no project matching %r on the résumé" % want
+        if hit not in pinned:
+            hit["pinned"] = True
+            pinned.append(hit)
+    if pinned:
+        rest = [p for p in keep if p not in pinned]
+        keep = pinned + rest[:max(0, KEEP_AT_MOST - len(pinned))]
     cut = [p for p in projects if p not in keep]
 
     # Within each entry, lead with the point that answers them. The first
@@ -272,7 +287,10 @@ def render_notes(plan):
     L.append("## Projects, in the order they now appear")
     L.append("")
     for r in plan["projects"]:
-        why = ("answers " + ", ".join("`%s`" % h for h in r["hits"])) if r["hits"] else "kept for range"
+        if r.get("pinned"):
+            why = "kept because you asked"
+        else:
+            why = ("answers " + ", ".join("`%s`" % h for h in r["hits"])) if r["hits"] else "kept for range"
         L.append("1. **%s** — %s" % (r["entry"]["title"].split("·")[0].strip(), why))
     if plan["cut"]:
         L.append("")
@@ -404,8 +422,8 @@ def page_count(path):
         return None
 
 
-def run(posting_id, want_pdf=True, path=internships.PATH):
-    plan, err = build(posting_id, path)
+def run(posting_id, want_pdf=True, path=internships.PATH, keep_titles=()):
+    plan, err = build(posting_id, path, keep_titles)
     if err:
         return {"error": err}
     folder = intern_tailor.folder(plan["posting"])
@@ -426,7 +444,11 @@ def run(posting_id, want_pdf=True, path=internships.PATH):
                 break
             if page_count(pdf_path) == 1 or len(plan["projects"]) <= KEEP_AT_LEAST:
                 break
-            plan["cut"].append(plan["projects"].pop())
+            unpinned = [r for r in plan["projects"] if not r.get("pinned")]
+            if not unpinned:
+                break
+            plan["projects"].remove(unpinned[-1])
+            plan["cut"].append(unpinned[-1])
     with open(html_path, "w") as fh:
         fh.write(render_html(plan))
     with open(os.path.join(folder, "resume-notes.md"), "w") as fh:
@@ -466,9 +488,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("posting_id")
     ap.add_argument("--no-pdf", action="store_true")
+    ap.add_argument("--keep", action="append", default=[], metavar="PROJECT",
+                    help="keep this project even if it names none of their skills "
+                         "(part of its title; repeatable)")
     args = ap.parse_args()
     import json
-    r = run(args.posting_id, want_pdf=not args.no_pdf)
+    r = run(args.posting_id, want_pdf=not args.no_pdf, keep_titles=args.keep)
     print(json.dumps(r, indent=1))
     return 1 if r.get("error") else 0
 
