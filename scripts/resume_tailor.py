@@ -107,7 +107,25 @@ def order_skills(skills, wanted):
     for group, items in skills.items():
         asked = [i for i in items if any(odds._present(s, i) for s in wanted)]
         rest = [i for i in items if i not in asked]
-        out[group] = {"items": asked + rest, "lead": len(asked)}
+        out[group] = {"items": _sentence_case(items, asked + rest), "lead": len(asked)}
+    return out
+
+
+def _sentence_case(before, after):
+    """A line starts with a capital. Reordering can move "usability testing" to the
+    front and "User interviews" into the middle; the first gets its capital, and the
+    second loses its own only if the line writes that word in lower case elsewhere
+    ("user flows"), so a name like Figma is never lowered."""
+    if not after or after == before:
+        return after
+    out = list(after)
+    first = before[0]
+    if first in out[1:] and first[:1].isupper():
+        word = first.split()[0]
+        if any(w == word.lower() for item in before[1:] for w in item.split()):
+            out[out.index(first)] = first[0].lower() + first[1:]
+    if out[0][:1].islower():
+        out[0] = out[0][0].upper() + out[0][1:]
     return out
 
 
