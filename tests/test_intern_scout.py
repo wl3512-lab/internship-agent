@@ -376,6 +376,26 @@ class TestReport(unittest.TestCase):
             if os.path.exists(path):
                 os.unlink(path)
 
+    def test_a_next_step_shows_with_its_due_time(self):
+        path = tempfile.mktemp(suffix=".json")
+        try:
+            internships.apply({"postings": [
+                {"id": "x:1", "company": "Kaiju Games", "role": "Design Intern", "status": "interview",
+                 "submitted_at": "2026-09-29T02:43:28Z", "next_step": "3 online assessments",
+                 "next_due": "2026-10-16T16:00:00Z"},
+                {"id": "x:2", "company": "Nope Co", "role": "Intern", "status": "rejected",
+                 "next_step": "an interview that is not happening"}]}, path)
+            text = report.build(internships.load(path), path)
+            self.assertIn("Kaiju Games, Design Intern: 3 online assessments (due ", text)
+            self.assertNotIn("not happening", text)
+        finally:
+            if os.path.exists(path):
+                os.unlink(path)
+
+    def test_due_times_read_in_local_time(self):
+        self.assertRegex(report.due_local("2026-10-16T16:00:00Z"), r"^\w{3} Oct 1[56], \d{1,2}:00 [AP]M$")
+        self.assertEqual(report.due_local("soon"), "soon")
+
 
 class TestApplyGate(unittest.TestCase):
     """The fill plan, whose one job is to refuse when it should."""

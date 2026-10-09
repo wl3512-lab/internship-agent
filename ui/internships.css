@@ -335,6 +335,8 @@ body.jc-docked .stage { margin-right: var(--jc-w); }
 a.jb-app-role:hover { text-decoration: underline; }
 .jb-app-when { font-size: var(--t-xs); color: var(--ink-soft); font-family: ui-monospace, Menlo, monospace; }
 .jb-app-nudge { font-size: var(--t-xs); color: #ffd60a; }
+.jb-app-next { font-size: var(--t-xs); color: var(--ink); }
+.jb-app-next.soon { color: #ff9f0a; font-weight: 600; }
 .jb-app-acts { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .jb-btn.small { min-height: 30px; padding: 0 10px; font-size: var(--t-xs); }
 .jb-btn.ghost { background: transparent; border-color: transparent; color: var(--ink-soft); }
@@ -513,6 +515,8 @@ a.jb-app-role:hover { text-decoration: underline; }
 #jobsPage .jb-app-row.s-rejected::before { background: var(--ap-3rd); }
 #jobsPage .jb-app-role { font-size: 14px; font-weight: 600; color: var(--ink); }
 #jobsPage .jb-app-when { color: var(--ap-3rd); font-family: inherit; font-size: 12px; }
+#jobsPage .jb-app-next { font-size: 12px; color: var(--ink); }
+#jobsPage .jb-app-next.soon { color: #ff9f0a; }
 #jobsPage .jb-app-acts .jb-btn { min-height: 24px; padding: 3px 10px; font-size: 12px; }
 
 /* Every posting: an inset table */

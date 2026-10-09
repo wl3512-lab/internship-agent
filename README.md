@@ -93,7 +93,8 @@ Record shapes:
 
 ```
 posting  {id, role, company, url, apply_url, location, location_group, fit, fit_reasons,
-          eligibility_note, materials:[{label,url,note}], deadline, found_at, status}
+          eligibility_note, materials:[{label,url,note}], deadline, found_at, status,
+          next_step, next_due}
 ask      {id, question, why, posting_id, answer, status, answered_at}
 note     {id, text, status, reply, created_at}
 run      {id, ran_at, summary, sources_failed:[]}

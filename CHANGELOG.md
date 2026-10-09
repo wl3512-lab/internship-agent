@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+- Next steps after applying: a posting can carry `next_step` and `next_due`
+  (an assessment, an interview, and when its link expires). The Applied tab
+  shows "Next: … · due Fri, Oct 16, 12:00 PM" under the posting, in orange
+  inside three days, and the daily report lists them soonest first.
 - ATS check: `resume_check.py <folder>` writes `ats-check.md` beside every
   tailored résumé (both `resume_tailor.py` and `intern_render.py` run it). It
   reads the PDF the way a parser does - text layer, fonts, contact lines,

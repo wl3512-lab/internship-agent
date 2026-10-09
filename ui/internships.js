@@ -666,6 +666,15 @@
         ? "applied " + fmtDate(p.submitted_at) + (d != null ? " \u00b7 " + (d === 0 ? "today" : d + "d ago") : "")
         : "applied (date not recorded)");
       main.appendChild(when);
+      // what the company asked for next (an assessment, an interview) and by when
+      if (p.next_step && p.status !== "rejected") {
+        var due = Date.parse(p.next_due || "");
+        var left = due ? (due - Date.now()) / 86400000 : null;
+        var next = el("span", "jb-app-next" + (left != null && left < 3 ? " soon" : ""),
+          "Next: " + p.next_step + (due ? " \u00b7 due " + fmtWhen(p.next_due) +
+            (left < 0 ? " (passed)" : left < 1 ? " (today)" : "") : ""));
+        main.appendChild(next);
+      }
       // two quiet weeks is when a short follow-up note is normal and useful
       if (p.status === "submitted" && d != null && d >= 14) {
         main.appendChild(el("span", "jb-app-nudge", "No reply in " + d + " days - a short follow-up is fair"));
