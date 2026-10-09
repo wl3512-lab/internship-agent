@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+- One drafts folder per posting: a second posting with the same company and
+  title (Stripe's intern role, once per city) gets its id appended instead of
+  writing over the first one's drafts. A posting with saved materials keeps
+  the folder they are in.
 - The work queue now drops graduate-program titles too (Master's, PhD,
   doctoral, MBA), using the same rule as the odds: four Pinterest Master's/PhD
   internships with an empty eligibility note were still being queued.

@@ -64,8 +64,36 @@ def find(posting_id, path=internships.PATH):
     return None
 
 
-def folder(posting):
-    return os.path.join(DRAFTS, "%s-%s" % (slug(posting.get("company")), slug(posting.get("role"))))
+def _saved_folder(posting):
+    """The drafts folder this posting's saved materials point at, if any."""
+    for m in posting.get("materials") or []:
+        note = str(m.get("note") or "")
+        head = note.split("/", 1)[0]
+        if "/" in note and head and os.path.isdir(os.path.join(DRAFTS, head)):
+            return head
+    return None
+
+
+def folder(posting, path=None):
+    """<company>-<role>, unless another posting with the same title owns that.
+
+    Stripe posts one role per city under one title. Named from company and
+    role alone, the Seattle posting's drafts would have overwritten the Toronto
+    ones she had already edited. A posting that has saved materials keeps the
+    folder they are in; a later one with the same title gets its id appended.
+    """
+    saved = _saved_folder(posting)
+    if saved:
+        return os.path.join(DRAFTS, saved)
+    name = "%s-%s" % (slug(posting.get("company")), slug(posting.get("role")))
+    try:
+        others = internships.load(path or internships.PATH)["postings"]
+    except Exception:
+        others = []
+    pid = posting.get("id")
+    if any(p.get("id") != pid and _saved_folder(p) == name for p in others):
+        name += "-" + slug(str(pid).rsplit(":", 1)[-1])
+    return os.path.join(DRAFTS, name)
 
 
 def brief(posting_id, path=internships.PATH):
