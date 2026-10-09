@@ -62,8 +62,8 @@ class PrintCopy(unittest.TestCase):
         self.assertIsNone(problem)
         with open(copy) as fh:
             out = fh.read()
-        self.assertIn("no-common-ligatures", out)
-        self.assertLess(out.index("no-common-ligatures"), out.index("</head>"))
+        self.assertIn("font-variant-ligatures:none", out)
+        self.assertLess(out.index("font-variant-ligatures:none"), out.index("</head>"))
         self.assertEqual(self.asked, [])
 
     def test_offline_keeps_the_page_fonts(self):
@@ -76,7 +76,7 @@ class PrintCopy(unittest.TestCase):
         with open(copy) as fh:
             out = fh.read()
         self.assertIn("fonts.googleapis.com", out)
-        self.assertIn("no-common-ligatures", out)
+        self.assertIn("font-variant-ligatures:none", out)
 
 
 if __name__ == "__main__":

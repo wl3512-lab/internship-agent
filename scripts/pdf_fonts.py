@@ -16,7 +16,7 @@ changed; only a throwaway print copy is.
 Real fonts bring one catch: Chrome sets "fi", "fl" and "ffl" as single
 ligature glyphs, and a parser reads those back as one character - "ﬂows",
 "ﬁndings", "oﬄine" - so a search for "user flows" misses the page. Every
-print copy turns common ligatures off; nobody can see the difference.
+print copy turns ligatures off; nobody can see the difference.
 
     python3 pdf_fonts.py <file.pdf>     list the fonts a PDF embeds
 """
@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config
 
 CACHE = os.path.join(config.HOME, "fonts")
-NO_LIGATURES = "<style>*{font-variant-ligatures:no-common-ligatures!important}</style>"
+NO_LIGATURES = "<style>*{font-variant-ligatures:none!important}</style>"
 LINK_RX = re.compile(r"<link\b[^>]*\bhref=[\"'](https://fonts\.googleapis\.com/css2?\?[^\"']+)[\"'][^>]*>", re.I)
 FILE_RX = re.compile(r"url\((https://fonts\.gstatic\.com/[^)\s]+)\)")
 TIMEOUT = 15

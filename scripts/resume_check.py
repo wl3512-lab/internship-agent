@@ -17,7 +17,8 @@ inventing a score:
                              is not on this page
                not claimed   nowhere in the user's documents: ask, never add
   title      whether the posting's job title, in its words, is near the top
-  numbers    how many points carry one
+  numbers    how many points carry one, and any number on the page that is
+             in nothing the user wrote (a tailoring pass that invented one)
 
 Recruiters search an ATS for literal words ("user research"), so "you have
 user interviews" is not a match until the page says it. Nothing here edits the
@@ -96,6 +97,13 @@ PHONE = re.compile(r"(?:\+?\d[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}")
 LINKEDIN = re.compile(r"linkedin\.com/in/[\w-]+", re.I)
 SITE = re.compile(r"\b(?!linkedin)[\w-]+\.(?:xyz|com|io|me|dev|design|art|net|org|studio|site)\b(?!@)", re.I)
 # Glyphs a parser may drop or turn into a box. Harmless for a person.
+# Greenhouse does not parse a résumé over 2.5 MB.
+MAX_BYTES = int(2.5 * 1024 * 1024)
+# A digit run, as in "6 interviews", "71–80%", "3.93", "100+".
+DIGITS = re.compile(r"(?<![\w.])\d+(?:\.\d+)?")
+YEAR = re.compile(r"^(19|20)\d\d$")
+# "Spring – Sep 2026" has no start year; a parser cannot place it.
+NO_START_YEAR = re.compile(r"\b(?:Spring|Summer|Fall|Autumn|Winter)\s*[\u2013\u2014-]", re.I)
 # "fi" and "fl" set as one glyph come back from a parser as one character.
 LIGATURE_WORD = re.compile("\\w*[\ufb00-\ufb06]\\w*")
 ODD_GLYPHS = re.compile("[\u2190-\u21ff\u2600-\u27bf\ue000-\uf8ff\U0001f300-\U0001faff]")
@@ -217,6 +225,13 @@ def readable(page, lines, fonts, pages):
     if undated:
         out.append(("fix", "experience dated by season (%s): a parser counts months from "
                     "'Sep 2026 – Present', not from 'Fall'" % undated[0][:60]))
+    if "\ufffd" in page:
+        out.append(("fix", "the text has replacement characters (\ufffd): a glyph the parser "
+                    "could not map. Find it in the PDF and change its font or character."))
+    starts = [m for m in (NO_START_YEAR.search(l) for l in lines) if m]
+    if starts:
+        out.append(("note", "a date with no start year (%s): write it as 'Feb 2026 \u2013 Sep 2026'"
+                    % starts[0].string[starts[0].start():].strip()))
     odd = sorted(set(ODD_GLYPHS.findall(page)))
     if odd:
         out.append(("note", "decorative glyph%s %s may come out as a box in some parsers"
@@ -244,6 +259,25 @@ def numbers(html_src):
     return sum(1 for p in points if re.search(r"\d", re.sub(r"<[^>]+>", "", p))), len(points)
 
 
+def unsourced_numbers(page, lines, sources):
+    """Numbers on the page that appear in none of the user's own documents.
+
+    The chat rewrites lines, and a model that rewrites will sooner or later
+    write "40%" where the user wrote "about half". This catches a number
+    nobody wrote; it cannot catch a true number moved onto the wrong claim.
+    Years and the contact lines are left out.
+    """
+    have = set(DIGITS.findall(sources))
+    # section numbers ("05 SKILLS") are decoration, not claims
+    body = "\n".join(l for l in (lines[8:] if len(lines) > 8 else page.splitlines())
+                     if re.sub(r"^\d{1,2}\s+", "", l.strip()).upper() not in HEADINGS)
+    out = []
+    for n in DIGITS.findall(body):
+        if n not in have and not YEAR.match(n) and n not in out:
+            out.append(n)
+    return out
+
+
 def check(pdf_path, posting, profile=None):
     from pypdf import PdfReader
     import pdf_fonts
@@ -254,6 +288,14 @@ def check(pdf_path, posting, profile=None):
     elsewhere = " ".join(str(profile.get(k) or "") for k in ("resume_text", "cv_text", "cover_letter_text"))
     reqs = (posting.get("requirements") or "") + "\n" + (posting.get("role") or "")
     rows = keywords(page, reqs, elsewhere)
+    problems = readable(page, lines, pdf_fonts.fonts(pdf_path), len(reader.pages))
+    if os.path.getsize(pdf_path) > MAX_BYTES:
+        problems.insert(0, ("fix", "%.1f MB: Greenhouse will not parse a file over 2.5 MB"
+                            % (os.path.getsize(pdf_path) / 1048576.0)))
+    unsourced = unsourced_numbers(page, lines, elsewhere) if elsewhere.strip() else []
+    if unsourced:
+        problems.insert(0, ("fix", "numbers in nothing you wrote: %s. Check each one before "
+                            "this goes anywhere." % ", ".join(unsourced[:6])))
     head = "\n".join(lines[:4])
     titles = [{"phrase": t, "in_headline": _has(t, head), "on_page": _has(t, page)}
               for t in title_phrases(posting.get("role"))]
@@ -264,7 +306,7 @@ def check(pdf_path, posting, profile=None):
         with_n, total = 0, 0
     return {
         "pdf": pdf_path, "pages": len(reader.pages),
-        "readable": readable(page, lines, pdf_fonts.fonts(pdf_path), len(reader.pages)),
+        "readable": problems,
         "keywords": rows, "title": titles,
         "numbers": {"with": with_n, "points": total},
         "source": "description" if (posting.get("requirements") or "").strip() else "title only",

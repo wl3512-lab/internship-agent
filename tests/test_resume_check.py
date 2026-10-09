@@ -111,6 +111,29 @@ class Readable(unittest.TestCase):
         self.assertEqual(rc.readable("", [], [], 1)[0][0], "blocker")
 
 
+class Provenance(unittest.TestCase):
+    def test_an_invented_number_is_caught(self):
+        lines = PAGE.splitlines() + ["Cut onboarding time by 40% across 12 flows."]
+        found = rc.unsourced_numbers("\n".join(lines), lines, "Interviewed 8 students; 6 tests; 40 components; 4 flows")
+        self.assertIn("12", found)
+        self.assertNotIn("2026", found)          # years are dates, not claims
+        self.assertNotIn("40", found)
+
+    def test_section_numbers_are_not_claims(self):
+        lines = PAGE.splitlines() + ["05 SKILLS & TOOLS", "Figma"]
+        self.assertEqual(rc.unsourced_numbers("\n".join(lines), lines, "40 4 8 6"), [])
+
+    def test_dates_without_a_start_year_are_noted(self):
+        page = PAGE.replace("Expected May 2029", "Spring \u2013 Sep 2026") * 3
+        out = rc.readable(page, [l for l in page.splitlines() if l.strip()], [], 1)
+        self.assertTrue(any("start year" in t for _, t in out))
+
+    def test_replacement_characters_are_a_fix(self):
+        page = (PAGE + " \ufffd") * 3
+        out = rc.readable(page, [l for l in page.splitlines() if l.strip()], [], 1)
+        self.assertTrue(any(lvl == "fix" and "replacement" in t for lvl, t in out))
+
+
 class Numbers(unittest.TestCase):
     def test_counts_points_from_the_html(self):
         html = "<ul class='points'><li>Ran 6 interviews.</li><li>Designed the <b>brand</b>.</li></ul>"

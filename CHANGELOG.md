@@ -9,7 +9,10 @@
   does not answer a search for "user research"), written in the CV or letter
   but left off, or never claimed. It also says whether the job title is in the
   headline. Required and preferred terms are told apart ("a plus",
-  "preferred"). No score: counts only.
+  "preferred"). No score: counts only. It also flags any number on the page
+  that is in none of the user's documents (a rewrite that invented one),
+  replacement characters, a file over Greenhouse's 2.5 MB limit, and dates
+  with no start year ("Spring – Sep 2026").
 - Static fonts for printing: Chrome embedded DM Sans, a variable Google Font,
   as Type3 drawings, the font type older ATS parsers garble. Before printing,
   `pdf_fonts.py` swaps each Google Fonts link for the static TrueType files
