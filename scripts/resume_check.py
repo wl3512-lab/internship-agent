@@ -77,11 +77,30 @@ TERMS = {
     "agile": (["agile", "scrum"], ["sprint*"]),
     "A/B testing": (["a/b test*"], []),
     "analytics": (["analytics"], []),
+    # engineering, research-ops and AI-tooling postings name these
+    "automation": (["automat*"], ["scheduled agent*", "pipeline*"]),
+    "dashboards": (["dashboard*"], []),
+    "internal tools": (["internal tool*"], []),
+    "Claude": (["claude"], []),
+    "Cursor": (["cursor"], []),
+    "GitHub": (["github"], ["git"]),
+    "API integrations": (["api integration*", "integrat* api*"], ["mcp connector*", "api*"]),
+    "Swift": (["swift"], []),
+    "SwiftUI": (["swiftui"], []),
+    "UIKit": (["uikit"], []),
+    "Objective-C": (["objective-c"], []),
+    "surveys": (["survey*"], []),
+    "Qualtrics": (["qualtrics"], []),
+    "FigJam": (["figjam"], []),
+    "Dovetail": (["dovetail"], []),
+    "data analysis": (["data analys*", "analyz* data"], []),
+    "marketing": (["marketing"], ["campaign*", "social"]),
+    "storytelling": (["storytell*"], ["narrative*"]),
 }
 
 # Words in a job title that say nothing about the work.
 TITLE_NOISE = re.compile(
-    r"\b(intern(ship)?s?|co-?op|student|summer|fall|winter|spring|20\d\d|\d{4}|"
+    r"\b(intern(ship)?s?|co-?op|student|summer|fall|winter|spring|20\d\d|\d{4}|\d+ (?:month|week)s?|"
     r"new grad|entry[- ]level|junior|jr|part[- ]time|full[- ]time|remote|hybrid|on-?site|usa?)\b", re.I)
 PREFERRED = re.compile(r"\b(prefer\w*|a plus|plus\b|nice to have|bonus|ideally|desired|desirable)", re.I)
 HEADINGS = {"EDUCATION": "education", "EXPERIENCE": "experience", "WORK EXPERIENCE": "experience",
@@ -125,7 +144,8 @@ def vocabulary():
     """{term: (forms, related)} - the design terms plus every named tool."""
     out = dict(TERMS)
     for s in odds.SKILLS:
-        if not any(s in [f.rstrip("*") for f in forms] for forms, _ in out.values()):
+        # "wireframe" is already the term "wireframing" (wirefram*): one ask, not two
+        if not any(_has(f, s) for forms, _ in out.values() for f in forms):
             form = s + "*" if s in odds.STEMS else s
             out.setdefault(s, ([form], [w for w in odds.SYNONYMS.get(s, [])]))
     return out
@@ -175,7 +195,7 @@ def title_phrases(role):
     out = []
     # "UX/UI" is one name; a division slash keeps the split below off it
     role = re.sub(r"\b(UX|UI)\s*/\s*(UX|UI)\b", "\\1\u2215\\2", role or "", flags=re.I)
-    for part in re.split("[(),|/\u2013\u2014]|\\s-\\s", role):
+    for part in re.split("[(),|/:\u2013\u2014]|\\s-\\s", role):
         words = TITLE_NOISE.sub(" ", part)
         words = re.sub(r"\s+", " ", words).strip(" -&").replace("\u2215", "/")
         if len(words) > 2 and words.lower() not in [o.lower() for o in out]:

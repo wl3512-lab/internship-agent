@@ -44,6 +44,13 @@ class Asked(unittest.TestCase):
         self.assertNotIn("python", [t for t, _, _ in rc.asked(POSTING)])
 
 
+class Vocabulary(unittest.TestCase):
+    def test_a_tool_already_covered_by_a_stem_is_not_asked_twice(self):
+        terms = [t for t, _, _ in rc.asked("Wireframes and wireframing for mobile flows.")]
+        self.assertIn("wireframing", terms)
+        self.assertNotIn("wireframe", terms)
+
+
 class Keywords(unittest.TestCase):
     def setUp(self):
         self.rows = rc.keywords(PAGE, POSTING, elsewhere="I wrote documentation for the studio.")
@@ -71,6 +78,9 @@ class Title(unittest.TestCase):
     def test_noise_goes_and_ux_ui_stays_whole(self):
         self.assertEqual(rc.title_phrases("UX/UI Design Intern (Interaction Design), Emergency Care - Summer 2027"),
                          ["UX/UI Design", "Interaction Design", "Emergency Care"])
+
+    def test_a_season_prefix_is_not_part_of_the_title(self):
+        self.assertEqual(rc.title_phrases("Summer 2027: Product Design Intern"), ["Product Design"])
 
     def test_plain_title(self):
         self.assertEqual(rc.title_phrases("Software Engineer Intern, Summer 2027"), ["Software Engineer"])
