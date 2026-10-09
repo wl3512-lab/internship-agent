@@ -110,6 +110,32 @@ def declared(label, profile, posting=None):
     return None
 
 
+_MONTHS = ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+# whole month names or their usual short forms only, so "decide 2028" is not December
+_MONTH_RE = (r"\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|"
+             r"sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(20\d\d)\b")
+
+
+def _month(text):
+    """(year, month) when the whole text is a month and year ("May 2029")."""
+    m = re.fullmatch(_MONTH_RE, (text or "").strip().lower())
+    return (int(m.group(2)), _MONTHS.index(m.group(1)[:3]) + 1) if m else None
+
+
+def _month_in(when, option):
+    """Is (year, month) inside a range option, as the form words it?"""
+    found = [(int(y), _MONTHS.index(mo[:3]) + 1) for mo, y in re.findall(_MONTH_RE, option)]
+    if len(found) == 2 and re.search(r"[-–—]|\bto\b|\bthrough\b", option):
+        return found[0] <= when <= found[1]
+    if len(found) == 1 and re.match(r"before\b", option):
+        return when < found[0]
+    if len(found) == 1 and re.search(r"\bor later\b", option):
+        return when >= found[0]
+    if len(found) == 1 and re.match(r"after\b", option):
+        return when > found[0]
+    return False
+
+
 def match_option(value, options):
     """Find the option that means what the answer says.
 
@@ -142,6 +168,14 @@ def match_option(value, options):
             for i, o in enumerate(low):
                 if o == canonical or o in alts:
                     return options[i]
+
+    # A date offered as ranges ("December 2028 - August 2029", "Before
+    # September 2027", "September 2029 or later"): the one option that contains
+    # the month, or none - a neighbouring range would be a false answer.
+    when = _month(want)
+    if when:
+        hits = [i for i, o in enumerate(low) if _month_in(when, o)]
+        return options[hits[0]] if len(hits) == 1 else None
 
     # A substring fallback is only safe for a distinctive answer. "No" is
     # inside "Nope", "Not sure" and "November", and picking one of those on
@@ -231,8 +265,9 @@ def answer_for(label, profile, posting):
         return profile.get("phone") or None
     if "linkedin" in l:
         return link("linkedin")
-    if "portfolio" in l and "password" in l:
+    if "portfolio" in l and "password" in l and not re.search(r"\b(link|url)\b", l):
         # the site is public; an empty answer is the true one
+        # ("a link to your portfolio, and the password if it has one" wants the link)
         return ""
     if "portfolio" in l or "website" in l or "personal site" in l:
         return link("portfolio")
@@ -326,7 +361,9 @@ def build_plan(posting_id, path=internships.PATH):
                             "why": "No tailored résumé for this posting yet. "
                                    "Run: python3 resume_tailor.py %s" % posting.get("id")})
             continue
-        essay = "textarea" in kinds and len(label) > 40
+        # A long box that asks for a link is not an essay: the link is the answer.
+        essay = ("textarea" in kinds and len(label) > 40
+                 and not (isinstance(value, str) and value.startswith("http")))
         if essay:
             (blocked if required else manual).append({"label": label, "required": required,
                            "why": "Written answer - see the application draft."})

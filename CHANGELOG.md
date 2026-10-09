@@ -1,6 +1,12 @@
 # Changelog
 
 ## Unreleased
+- Forms that offer a date as ranges ("December 2028 - August 2029", "Before
+  September 2027", "September 2029 or later") now get the one range that
+  holds the user's month; a month between ranges is handed back, not guessed.
+  "A link to your portfolio, and the password if it has one" gets the link
+  instead of a blank, and a long box that asks for a link is no longer
+  treated as an essay.
 - Next steps after applying: a posting can carry `next_step` and `next_due`
   (an assessment, an interview, and when its link expires). The Applied tab
   shows "Next: … · due Fri, Oct 16, 12:00 PM" under the posting, in orange
