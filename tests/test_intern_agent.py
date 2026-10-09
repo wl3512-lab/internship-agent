@@ -25,5 +25,20 @@ class DaysUntilTests(unittest.TestCase):
         self.assertIsNone(intern_agent.days_until("rolling", today=OCT_1))
 
 
+class BlockedTests(unittest.TestCase):
+    """What the queue keeps away from the user."""
+
+    def test_a_graduate_program_title_is_blocked_with_no_note(self):
+        # Pinterest's Master's and PhD internships came through with a blank
+        # note and sat in the queue, though intern_odds already called them walls.
+        for role in ("Master's Machine Learning Internship 2027 (USA)",
+                     "PhD Data Science Internship 2027 (USA)"):
+            self.assertTrue(intern_agent.blocked({"role": role, "eligibility_note": ""}), role)
+
+    def test_an_ordinary_internship_is_not(self):
+        self.assertFalse(intern_agent.blocked({"role": "Software Engineer, Intern (Summer or Winter)",
+                                               "eligibility_note": ""}))
+
+
 if __name__ == "__main__":
     unittest.main()

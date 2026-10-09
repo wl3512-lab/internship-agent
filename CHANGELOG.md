@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- The work queue now drops graduate-program titles too (Master's, PhD,
+  doctoral, MBA), using the same rule as the odds: four Pinterest Master's/PhD
+  internships with an empty eligibility note were still being queued.
+- The Internships page knows a Seattle place tier (label, Where filter, add
+  form) and sorts it with the other wanted places.
 - Odds: a posting outside the places the user can work is at best a long shot,
   however well the skills match (Pinterest Dublin and Zurich scored strong).
   A title that names a graduate program (Master's, PhD, doctoral, MBA) is a

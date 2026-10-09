@@ -21,6 +21,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import intern_odds
 import internships
 
 ACTIVE = {"new", "needs_info", "ready"}
@@ -68,10 +69,16 @@ def blocked(p):
 
     "Rising senior" stays a headwind. It is a preference rather than a filter
     and plenty of postings say it without enforcing it.
+
+    A graduate program named in the title is a wall too, note or not: a
+    description that only says "currently pursuing a Master's" leaves the note
+    empty, and four Pinterest Master's/PhD internships sat in the queue while
+    intern_odds already called them blocked.
     """
     note = (p.get("eligibility_note") or "").lower()
     return ("not eligible" in note or "phd" in note or "master's" in note
-            or "wants graduates of" in note or "wants graduates between" in note)
+            or "wants graduates of" in note or "wants graduates between" in note
+            or bool(intern_odds.GRAD_TITLE_RE.search(p.get("role") or "")))
 
 
 def load(path=internships.PATH):
