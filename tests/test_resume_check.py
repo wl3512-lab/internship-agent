@@ -102,6 +102,11 @@ class Readable(unittest.TestCase):
         self.assertFalse(any("no section" in t for _, t in out))
         self.assertTrue(any(lvl == "note" and "numbers" in t for lvl, t in out))
 
+    def test_ligatures_are_a_fix(self):
+        page = PAGE.replace("prototyping", "user \ufb02ows") * 3
+        out = rc.readable(page, self.lines(page), [], 1)
+        self.assertTrue(any(lvl == "fix" and "ligatures" in t for lvl, t in out))
+
     def test_no_text_layer_is_a_blocker(self):
         self.assertEqual(rc.readable("", [], [], 1)[0][0], "blocker")
 

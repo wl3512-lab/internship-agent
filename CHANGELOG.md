@@ -14,7 +14,10 @@
   as Type3 drawings, the font type older ATS parsers garble. Before printing,
   `pdf_fonts.py` swaps each Google Fonts link for the static TrueType files
   Google serves to non-browser clients (cached in the agent folder); the
-  drafts HTML is untouched, and offline it prints as before.
+  drafts HTML is untouched, and offline it prints as before. Every print
+  also turns common ligatures off: with real fonts Chrome set "fi"/"fl" as
+  one glyph and parsers read back "ﬂows" and "ﬁndings", which no search for
+  "user flows" finds. The ATS check flags ligatures in any PDF.
 - One drafts folder per posting: a second posting with the same company and
   title (Stripe's intern role, once per city) gets its id appended instead of
   writing over the first one's drafts. A posting with saved materials keeps

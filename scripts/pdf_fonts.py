@@ -13,6 +13,11 @@ Google Fonts stylesheet link is swapped for that static CSS, with the font
 files cached under the agent's folder. The HTML in the drafts folder is never
 changed; only a throwaway print copy is.
 
+Real fonts bring one catch: Chrome sets "fi", "fl" and "ffl" as single
+ligature glyphs, and a parser reads those back as one character - "ﬂows",
+"ﬁndings", "oﬄine" - so a search for "user flows" misses the page. Every
+print copy turns common ligatures off; nobody can see the difference.
+
     python3 pdf_fonts.py <file.pdf>     list the fonts a PDF embeds
 """
 import html
@@ -25,6 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config
 
 CACHE = os.path.join(config.HOME, "fonts")
+NO_LIGATURES = "<style>*{font-variant-ligatures:no-common-ligatures!important}</style>"
 LINK_RX = re.compile(r"<link\b[^>]*\bhref=[\"'](https://fonts\.googleapis\.com/css2?\?[^\"']+)[\"'][^>]*>", re.I)
 FILE_RX = re.compile(r"url\((https://fonts\.gstatic\.com/[^)\s]+)\)")
 TIMEOUT = 15
@@ -55,28 +61,33 @@ def static_css(url, fetch=_fetch, cache=CACHE):
 
 
 def print_copy(html_path, fetch=_fetch, cache=CACHE):
-    """A copy of the page to print, with static fonts in place of variable ones.
+    """A copy of the page to print: ligatures off, static fonts for variable ones.
 
-    Returns (path, problem). With no Google Fonts link the page itself is
-    printed. If the fonts cannot be fetched, the page prints as it is - the
-    same PDF as before this existed - and the problem says why.
+    Returns (path, problem). If the fonts cannot be fetched, the copy keeps
+    the page's own links - the same fonts as before this existed - and the
+    problem says why.
     """
     with open(html_path, encoding="utf-8") as fh:
         src = fh.read()
+    problem = None
     links = LINK_RX.findall(src)
-    if not links:
-        return html_path, None
-    try:
-        styles = {url: static_css(html.unescape(url), fetch, cache) for url in links}
-    except Exception as exc:
-        return html_path, "web fonts not swapped for static ones: %s" % str(exc)[:90]
-    out = LINK_RX.sub(lambda m: "<style>\n%s</style>" % styles[m.group(1)], src)
+    if links:
+        try:
+            styles = {url: static_css(html.unescape(url), fetch, cache) for url in links}
+            src = LINK_RX.sub(lambda m: "<style>\n%s</style>" % styles[m.group(1)], src)
+        except Exception as exc:
+            problem = "web fonts not swapped for static ones: %s" % str(exc)[:90]
+    # last in the head, so a design's own font settings cannot turn them back on
+    if re.search(r"</head>", src, re.I):
+        src = re.sub(r"</head>", NO_LIGATURES + "</head>", src, count=1, flags=re.I)
+    else:
+        src = NO_LIGATURES + src
     folder, base = os.path.split(html_path)
     # beside the original, so relative images and stylesheets still resolve
     copy = os.path.join(folder, "." + os.path.splitext(base)[0] + ".print.html")
     with open(copy, "w", encoding="utf-8") as fh:
-        fh.write(out)
-    return copy, None
+        fh.write(src)
+    return copy, problem
 
 
 def fonts(pdf_path):

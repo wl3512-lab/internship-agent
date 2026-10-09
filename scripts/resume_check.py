@@ -96,6 +96,8 @@ PHONE = re.compile(r"(?:\+?\d[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}")
 LINKEDIN = re.compile(r"linkedin\.com/in/[\w-]+", re.I)
 SITE = re.compile(r"\b(?!linkedin)[\w-]+\.(?:xyz|com|io|me|dev|design|art|net|org|studio|site)\b(?!@)", re.I)
 # Glyphs a parser may drop or turn into a box. Harmless for a person.
+# "fi" and "fl" set as one glyph come back from a parser as one character.
+LIGATURE_WORD = re.compile("\\w*[\ufb00-\ufb06]\\w*")
 ODD_GLYPHS = re.compile("[\u2190-\u21ff\u2600-\u27bf\ue000-\uf8ff\U0001f300-\U0001faff]")
 
 _RX = {}
@@ -184,6 +186,11 @@ def readable(page, lines, fonts, pages):
         out.append(("fix", "Type3 fonts: Chrome embedded a variable web font as drawings. Most "
                     "parsers still read them, older ones garble them. Reprint with "
                     "intern_render.py; the printer now swaps in static fonts."))
+    lig = LIGATURE_WORD.findall(page)
+    if lig:
+        out.append(("fix", "ligatures: the text reads \"%s\", so a search for the plain word "
+                    "misses it. Reprint with intern_render.py; the printer now turns them off."
+                    % "\", \"".join(sorted(set(lig))[:3])))
     if pages and pages > 1:
         out.append(("fix", "%d pages; a student résumé is one" % pages))
     top = "\n".join(lines[:12])

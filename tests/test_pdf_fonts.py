@@ -55,18 +55,28 @@ class PrintCopy(unittest.TestCase):
         pdf_fonts.print_copy(self.page, self.fetch, self.cache)
         self.assertEqual(sum("gstatic" in u for u in self.asked), 1)
 
-    def test_no_google_fonts_prints_the_page_itself(self):
+    def test_ligatures_are_off_in_every_copy(self):
+        # "ﬂows" in the PDF text is a search for "flows" that misses
         self.write("<style>body{font-family:Arial}</style>")
-        self.assertEqual(pdf_fonts.print_copy(self.page, self.fetch, self.cache), (self.page, None))
+        copy, problem = pdf_fonts.print_copy(self.page, self.fetch, self.cache)
+        self.assertIsNone(problem)
+        with open(copy) as fh:
+            out = fh.read()
+        self.assertIn("no-common-ligatures", out)
+        self.assertLess(out.index("no-common-ligatures"), out.index("</head>"))
+        self.assertEqual(self.asked, [])
 
-    def test_offline_falls_back_to_the_page(self):
+    def test_offline_keeps_the_page_fonts(self):
         self.write('<link href="%s" rel="stylesheet">' % CSS_URL)
 
         def down(url):
             raise OSError("offline")
         copy, problem = pdf_fonts.print_copy(self.page, down, self.cache)
-        self.assertEqual(copy, self.page)
         self.assertIn("offline", problem)
+        with open(copy) as fh:
+            out = fh.read()
+        self.assertIn("fonts.googleapis.com", out)
+        self.assertIn("no-common-ligatures", out)
 
 
 if __name__ == "__main__":
