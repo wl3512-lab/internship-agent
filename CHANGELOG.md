@@ -1,6 +1,20 @@
 # Changelog
 
 ## Unreleased
+- ATS check: `resume_check.py <folder>` writes `ats-check.md` beside every
+  tailored résumé (both `resume_tailor.py` and `intern_render.py` run it). It
+  reads the PDF the way a parser does - text layer, fonts, contact lines,
+  section names, month dates, page count - and sorts each term the posting
+  names: on the page in its words, there only in other words ("UX research"
+  does not answer a search for "user research"), written in the CV or letter
+  but left off, or never claimed. It also says whether the job title is in the
+  headline. Required and preferred terms are told apart ("a plus",
+  "preferred"). No score: counts only.
+- Static fonts for printing: Chrome embedded DM Sans, a variable Google Font,
+  as Type3 drawings, the font type older ATS parsers garble. Before printing,
+  `pdf_fonts.py` swaps each Google Fonts link for the static TrueType files
+  Google serves to non-browser clients (cached in the agent folder); the
+  drafts HTML is untouched, and offline it prints as before.
 - One drafts folder per posting: a second posting with the same company and
   title (Stripe's intern role, once per city) gets its id appended instead of
   writing over the first one's drafts. A posting with saved materials keeps

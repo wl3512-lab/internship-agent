@@ -19,6 +19,10 @@ Built by a student for her own search, then generalised so it works for anyone.
   deeper tailoring it works with the
   [resume-tailoring skill](https://github.com/varunr89/resume-tailoring-skill),
   and any reworded line is shown to you next to the original before it goes in.
+- **Checks what an ATS sees** in every tailored PDF: real fonts, standard
+  sections, month dates, the job title, and which of the posting's terms are
+  on the page in its words, which you have in other words, which you wrote
+  elsewhere, and which you have never claimed (it asks, never adds).
 - **Fills application forms** in a visible browser, uploads the tailored PDF,
   and stops. It never answers a legal or demographic question you have not
   answered yourself.
@@ -134,7 +138,9 @@ Run it without `--save` to print the same summary in a terminal.
 | `intern_odds.py` | how realistic a posting is for you, and why |
 | `intern_tailor.py` | a posting's brief; attach drafts and questions |
 | `resume_tailor.py` | reorder-only résumé and cover letter per posting |
-| `intern_render.py` | print a drafts folder's HTML to PDF |
+| `intern_render.py` | print a drafts folder's HTML to PDF, then run the ATS check |
+| `resume_check.py` | what an ATS sees: fonts, sections, dates, the posting's keywords in its own words |
+| `pdf_fonts.py` | swap variable web fonts for static ones before printing (no Type3) |
 | `intern_apply.py` | check and plan a form fill from the form's own schema |
 | `intern_fill.py` | fill it in a visible browser; stops before submit |
 | `intern_add.py` | add a posting you pasted in |

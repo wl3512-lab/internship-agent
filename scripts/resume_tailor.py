@@ -351,14 +351,23 @@ def render_notes(plan):
 def to_pdf(html_path, pdf_path):
     if not os.path.exists(CHROME):
         return "no Chrome to print with"
+    # static fonts in place of variable ones, which Chrome would embed as Type3
+    import pdf_fonts
+    try:
+        page, _ = pdf_fonts.print_copy(html_path)
+    except OSError:
+        page = html_path
     try:
         # the time budget lets web fonts (a designed layout's Google Fonts) arrive before printing
         subprocess.run([CHROME, "--headless", "--disable-gpu", "--no-pdf-header-footer",
                         "--virtual-time-budget=8000",
-                        "--print-to-pdf=" + pdf_path, "file://" + html_path],
+                        "--print-to-pdf=" + pdf_path, "file://" + page],
                        capture_output=True, timeout=90)
     except (OSError, subprocess.SubprocessError) as exc:
         return str(exc)[:110]
+    finally:
+        if page != html_path:
+            os.remove(page)
     return None if os.path.exists(pdf_path) else "Chrome produced no file"
 
 
@@ -499,6 +508,12 @@ def run(posting_id, want_pdf=True, path=internships.PATH, keep_titles=()):
                 out["warning"] = "%d pages - could not get it onto one." % out["pages"]
     out["kept"] = len(plan["projects"])
     out["cut"] = len(plan["cut"])
+    if want_pdf and out.get("pdf") == "resume.pdf":
+        try:
+            import resume_check
+            out["ats_check"] = resume_check.run(os.path.basename(folder), os.path.dirname(folder), path)
+        except Exception as exc:
+            out["ats_check"] = {"error": str(exc)[:120]}
     return out
 
 
