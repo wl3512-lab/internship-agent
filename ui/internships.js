@@ -35,16 +35,16 @@
     skipped:    ["Skipped",    "s-skip"],
     closed:     ["Closed",     "s-skip"]
   };
-  var LOC = { vancouver: "Vancouver", canada: "Canada", remote_canada: "Remote CA",
+  var LOC = { vancouver: "Vancouver", canada: "Canada", seattle: "Seattle", remote_canada: "Remote CA",
               remote_global: "Remote", remote_us: "Remote US", us: "US", other: "Other",
               unknown: "\u2014" };
-  var LOC_GROUP = { vancouver: "vancouver", canada: "canada", remote_canada: "remote",
+  var LOC_GROUP = { vancouver: "vancouver", canada: "canada", seattle: "seattle", remote_canada: "remote",
                     remote_global: "remote", remote_us: "remote", us: "us", other: "other",
                     unknown: "other" };
   /* Home region, then remote. A role that may need a visa is not off the
      table, but the scout says so in eligibility_note and it sorts below
      anything that does not. */
-  var PRI = { vancouver: 1, canada: 1, remote_canada: 1, remote_global: 1 };
+  var PRI = { vancouver: 1, canada: 1, seattle: 1, remote_canada: 1, remote_global: 1 };
   var ACTIVE = { "new": 1, needs_info: 1, ready: 1, submitted: 1, interview: 1, offer: 1 };
   var FILTERS = [["active", "Active"], ["all", "All"], ["submitted", "Sent"], ["skipped", "Passed"]];
 
@@ -411,7 +411,8 @@
     var lab = el("label", "jb-field");
     lab.appendChild(el("span", null, "Where"));
     var sel = el("select");
-    [["vancouver", "Vancouver / BC"], ["canada", "Elsewhere in Canada"], ["remote_canada", "Remote (Canada)"],
+    [["vancouver", "Vancouver / BC"], ["canada", "Elsewhere in Canada"], ["seattle", "Seattle area"],
+     ["remote_canada", "Remote (Canada)"],
      ["remote_global", "Remote (anywhere)"], ["remote_us", "Remote (US)"], ["us", "United States"], ["other", "Other"]]
       .forEach(function (o) { var op = el("option", null, o[1]); op.value = o[0]; sel.appendChild(op); });
     inputs.location_group = sel;
@@ -462,7 +463,7 @@
     lab.appendChild(el("span", null, "Where"));
     var sel = el("select");
     [["all", "Anywhere"], ["vancouver", "Vancouver / BC"], ["canada", "Elsewhere in Canada"],
-     ["remote", "Remote"], ["us", "United States"], ["other", "Other"]]
+     ["seattle", "Seattle area"], ["remote", "Remote"], ["us", "United States"], ["other", "Other"]]
       .forEach(function (o) { var op = el("option", null, o[1]); op.value = o[0]; sel.appendChild(op); });
     sel.value = view.loc;
     sel.addEventListener("change", function () { view.loc = sel.value; render(); });
