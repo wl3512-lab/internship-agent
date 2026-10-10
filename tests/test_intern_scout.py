@@ -81,6 +81,19 @@ class TestFilter(unittest.TestCase):
     def test_only_her_fields_match(self):
         self.assertEqual(scout.match_interests("Design Intern", "", {"ai"}), [])
 
+    def test_words_inside_other_words_do_not_count(self):
+        # "opportunity" is not Unity, "promotion" is not motion, "studios" is not iOS
+        body = ("the opportunity to join a strong community; promotion "
+                "materials for our studios and a deluxe lab")
+        self.assertEqual(scout.match_interests("Laboratory Operations Intern", body,
+                                               {"creative", "design", "software"}), [])
+
+    def test_stems_still_reach_longer_words(self):
+        self.assertEqual(scout.match_interests("Creative Technologist Intern", "", {"creative"}),
+                         [("creative", 2)])
+        self.assertEqual(scout.match_interests("Intern", "rapid prototyping in Figma", {"design"}),
+                         [("design", 1)])
+
 
 class TestScore(unittest.TestCase):
     def test_vancouver_ai_role_tops_out(self):
@@ -293,6 +306,25 @@ class TestOdds(unittest.TestCase):
                         self.PROFILE, self.hers)
         self.assertEqual(a["band"], "blocked")
 
+    def test_a_graduate_title_is_a_wall_even_with_a_clean_note(self):
+        # Pinterest's "Master's Machine Learning Internship" scraped with no
+        # note and came out a real chance for an undergraduate
+        for role in ("Master's Machine Learning Internship 2027 (USA)",
+                     "PhD Intern, Data Science (2027)"):
+            a = odds.assess(self._p(role=role), self.PROFILE, self.hers)
+            self.assertEqual(a["band"], "blocked", role)
+        self.assertNotEqual(odds.assess(self._p(role="Scrum Master Intern"),
+                                        self.PROFILE, self.hers)["band"], "blocked")
+
+    def test_outside_her_places_is_at_best_a_long_shot(self):
+        # Pinterest Dublin and Zurich scored strong on skills alone
+        reqs = "Python, React, Figma, user interviews, WCAG."
+        home = odds.assess(self._p(requirements=reqs), self.PROFILE, self.hers)
+        away = odds.assess(self._p(requirements=reqs, location_group="other"),
+                           self.PROFILE, self.hers)
+        self.assertEqual(home["band"], "strong")
+        self.assertEqual(away["band"], "long shot")
+
     def test_cs_only_program_blocks_but_or_equivalent_does_not(self):
         hard = self._p(requirements="Currently enrolled in a Computer Science degree program.")
         soft = self._p(requirements="Enrolled in a Computer Science program, or equivalent "
@@ -343,6 +375,26 @@ class TestReport(unittest.TestCase):
         finally:
             if os.path.exists(path):
                 os.unlink(path)
+
+    def test_a_next_step_shows_with_its_due_time(self):
+        path = tempfile.mktemp(suffix=".json")
+        try:
+            internships.apply({"postings": [
+                {"id": "x:1", "company": "Kaiju Games", "role": "Design Intern", "status": "interview",
+                 "submitted_at": "2026-09-29T02:43:28Z", "next_step": "3 online assessments",
+                 "next_due": "2026-10-16T16:00:00Z"},
+                {"id": "x:2", "company": "Nope Co", "role": "Intern", "status": "rejected",
+                 "next_step": "an interview that is not happening"}]}, path)
+            text = report.build(internships.load(path), path)
+            self.assertIn("Kaiju Games, Design Intern: 3 online assessments (due ", text)
+            self.assertNotIn("not happening", text)
+        finally:
+            if os.path.exists(path):
+                os.unlink(path)
+
+    def test_due_times_read_in_local_time(self):
+        self.assertRegex(report.due_local("2026-10-16T16:00:00Z"), r"^\w{3} Oct 1[56], \d{1,2}:00 [AP]M$")
+        self.assertEqual(report.due_local("soon"), "soon")
 
 
 class TestApplyGate(unittest.TestCase):
@@ -747,7 +799,7 @@ class TestCampusJobs(unittest.TestCase):
     not have, which is that many are for graduate students only.
     """
 
-    def _p(self, role, company="New York University On Campus", **kw):
+    def _p(self, role, company="Northgate University On Campus", **kw):
         base = {"id": "x", "role": role, "company": company, "status": "new",
                 "requirements": "", "eligibility_note": "", "fit": 2}
         base.update(kw)
@@ -807,8 +859,8 @@ class TestOneSchoolManyCampuses(unittest.TestCase):
         return base
 
     def test_her_campus_counts(self):
-        self.assertTrue(odds.is_campus(self._p("New York University On Campus")))
-        self.assertFalse(odds.is_other_campus(self._p("New York University On Campus")))
+        self.assertTrue(odds.is_campus(self._p("Northgate University On Campus")))
+        self.assertFalse(odds.is_other_campus(self._p("Northgate University On Campus")))
 
     def test_the_other_campuses_do_not(self):
         for company in ["Northgate Doha On-Campus Student Employment",

@@ -18,6 +18,7 @@ never touched.
 
     python3 resume_tailor.py <posting-id>
     python3 resume_tailor.py <posting-id> --no-pdf
+    python3 resume_tailor.py <posting-id> --keep "Project name"
 """
 
 import argparse
@@ -106,11 +107,29 @@ def order_skills(skills, wanted):
     for group, items in skills.items():
         asked = [i for i in items if any(odds._present(s, i) for s in wanted)]
         rest = [i for i in items if i not in asked]
-        out[group] = {"items": asked + rest, "lead": len(asked)}
+        out[group] = {"items": _sentence_case(items, asked + rest), "lead": len(asked)}
     return out
 
 
-def build(posting_id, path=internships.PATH):
+def _sentence_case(before, after):
+    """A line starts with a capital. Reordering can move "usability testing" to the
+    front and "User interviews" into the middle; the first gets its capital, and the
+    second loses its own only if the line writes that word in lower case elsewhere
+    ("user flows"), so a name like Figma is never lowered."""
+    if not after or after == before:
+        return after
+    out = list(after)
+    first = before[0]
+    if first in out[1:] and first[:1].isupper():
+        word = first.split()[0]
+        if any(w == word.lower() for item in before[1:] for w in item.split()):
+            out[out.index(first)] = first[0].lower() + first[1:]
+    if out[0][:1].islower():
+        out[0] = out[0][0].upper() + out[0][1:]
+    return out
+
+
+def build(posting_id, path=internships.PATH, keep_titles=()):
     posting = next((p for p in internships.load(path)["postings"]
                     if p.get("id") == posting_id), None)
     if not posting:
@@ -153,6 +172,20 @@ def build(posting_id, path=internships.PATH):
         # leaving a short résumé - a gap reads as having less to show
         rest = [p for p in projects if p not in keep]
         keep = keep + rest[:KEEP_AT_MOST - len(keep)]
+    # The ranking only knows named tools, so a game project scores zero against
+    # a game design posting that names Unity and Lua. The user can pin what the
+    # vocabulary misses; pinned projects lead and survive the one-page trim.
+    pinned = []
+    for want in keep_titles or ():
+        hit = next((p for p in projects if want.lower() in p["entry"]["title"].lower()), None)
+        if hit is None:
+            return None, "no project matching %r on the résumé" % want
+        if hit not in pinned:
+            hit["pinned"] = True
+            pinned.append(hit)
+    if pinned:
+        rest = [p for p in keep if p not in pinned]
+        keep = pinned + rest[:max(0, KEEP_AT_MOST - len(pinned))]
     cut = [p for p in projects if p not in keep]
 
     # Within each entry, lead with the point that answers them. The first
@@ -204,6 +237,12 @@ p.body { margin: 0 0 1.5pt; }
 
 
 def render_html(plan):
+    # the user's own designed layout, when the profile points at one
+    import resume_design
+    design = resume_design.design_path()
+    if design:
+        with open(design, encoding="utf-8") as fh:
+            return resume_design.render(plan, pretty_dates, fh.read())
     r, esc = plan["resume"], lambda s: (s or "").replace("&", "&amp;").replace("<", "&lt;")
     L = ["<!doctype html><meta charset='utf-8'><title>%s</title><style>%s</style>"
          % (esc(r["name"]), CSS)]
@@ -266,7 +305,10 @@ def render_notes(plan):
     L.append("## Projects, in the order they now appear")
     L.append("")
     for r in plan["projects"]:
-        why = ("answers " + ", ".join("`%s`" % h for h in r["hits"])) if r["hits"] else "kept for range"
+        if r.get("pinned"):
+            why = "kept because you asked"
+        else:
+            why = ("answers " + ", ".join("`%s`" % h for h in r["hits"])) if r["hits"] else "kept for range"
         L.append("1. **%s** — %s" % (r["entry"]["title"].split("·")[0].strip(), why))
     if plan["cut"]:
         L.append("")
@@ -309,12 +351,23 @@ def render_notes(plan):
 def to_pdf(html_path, pdf_path):
     if not os.path.exists(CHROME):
         return "no Chrome to print with"
+    # static fonts in place of variable ones, which Chrome would embed as Type3
+    import pdf_fonts
     try:
+        page, _ = pdf_fonts.print_copy(html_path)
+    except OSError:
+        page = html_path
+    try:
+        # the time budget lets web fonts (a designed layout's Google Fonts) arrive before printing
         subprocess.run([CHROME, "--headless", "--disable-gpu", "--no-pdf-header-footer",
-                        "--print-to-pdf=" + pdf_path, "file://" + html_path],
+                        "--virtual-time-budget=8000",
+                        "--print-to-pdf=" + pdf_path, "file://" + page],
                        capture_output=True, timeout=90)
     except (OSError, subprocess.SubprocessError) as exc:
         return str(exc)[:110]
+    finally:
+        if page != html_path:
+            os.remove(page)
     return None if os.path.exists(pdf_path) else "Chrome produced no file"
 
 
@@ -396,8 +449,8 @@ def page_count(path):
         return None
 
 
-def run(posting_id, want_pdf=True, path=internships.PATH):
-    plan, err = build(posting_id, path)
+def run(posting_id, want_pdf=True, path=internships.PATH, keep_titles=()):
+    plan, err = build(posting_id, path, keep_titles)
     if err:
         return {"error": err}
     folder = intern_tailor.folder(plan["posting"])
@@ -418,7 +471,11 @@ def run(posting_id, want_pdf=True, path=internships.PATH):
                 break
             if page_count(pdf_path) == 1 or len(plan["projects"]) <= KEEP_AT_LEAST:
                 break
-            plan["cut"].append(plan["projects"].pop())
+            unpinned = [r for r in plan["projects"] if not r.get("pinned")]
+            if not unpinned:
+                break
+            plan["projects"].remove(unpinned[-1])
+            plan["cut"].append(unpinned[-1])
     with open(html_path, "w") as fh:
         fh.write(render_html(plan))
     with open(os.path.join(folder, "resume-notes.md"), "w") as fh:
@@ -451,6 +508,12 @@ def run(posting_id, want_pdf=True, path=internships.PATH):
                 out["warning"] = "%d pages - could not get it onto one." % out["pages"]
     out["kept"] = len(plan["projects"])
     out["cut"] = len(plan["cut"])
+    if want_pdf and out.get("pdf") == "resume.pdf":
+        try:
+            import resume_check
+            out["ats_check"] = resume_check.run(os.path.basename(folder), os.path.dirname(folder), path)
+        except Exception as exc:
+            out["ats_check"] = {"error": str(exc)[:120]}
     return out
 
 
@@ -458,9 +521,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("posting_id")
     ap.add_argument("--no-pdf", action="store_true")
+    ap.add_argument("--keep", action="append", default=[], metavar="PROJECT",
+                    help="keep this project even if it names none of their skills "
+                         "(part of its title; repeatable)")
     args = ap.parse_args()
     import json
-    r = run(args.posting_id, want_pdf=not args.no_pdf)
+    r = run(args.posting_id, want_pdf=not args.no_pdf, keep_titles=args.keep)
     print(json.dumps(r, indent=1))
     return 1 if r.get("error") else 0
 
