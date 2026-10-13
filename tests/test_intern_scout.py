@@ -154,6 +154,31 @@ class TestEligibility(unittest.TestCase):
         self.assertEqual(p["apply_url"], "")
 
 
+class TestScan(unittest.TestCase):
+    def test_a_connection_reset_mid_read_skips_only_that_board(self):
+        # 13 Oct 2026: one Ashby board reset the socket while the body was
+        # being read, which urlopen does not wrap in URLError, and the whole
+        # morning scan died with it.
+        def resets(company, slug):
+            raise ConnectionResetError(54, "Connection reset by peer")
+
+        def works(company, slug):
+            return [{"role": "Design Intern", "body": "", "location": ""}]
+
+        saved = dict(scout.BOARDS)
+        scout.BOARDS.update({"ashby": resets, "greenhouse": works})
+        try:
+            found, failed = scout.scan(
+                [{"company": "Flaky", "board": "ashby", "slug": "flaky"},
+                 {"company": "Fine", "board": "greenhouse", "slug": "fine"}],
+                [], lambda msg: None)
+        finally:
+            scout.BOARDS.clear()
+            scout.BOARDS.update(saved)
+        self.assertEqual(failed, ["Flaky (ConnectionResetError)"])
+        self.assertEqual([r["role"] for r in found], ["Design Intern"])
+
+
 class TestStore(unittest.TestCase):
     def setUp(self):
         self.path = tempfile.mktemp(suffix=".json")

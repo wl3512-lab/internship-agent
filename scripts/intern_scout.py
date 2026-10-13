@@ -30,12 +30,12 @@ Run it:  python3 intern_scout.py            (writes to the tracker, see config.p
 
 import argparse
 import datetime as dt
+import http.client
 import json
 import os
 import re
 import ssl
 import sys
-import urllib.error
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -458,9 +458,11 @@ def scan(watchlist, wanted, log):
             continue
         try:
             rows = list(reader(company, slug))
-        except (urllib.error.URLError, urllib.error.HTTPError, ValueError, TimeoutError) as exc:
+        except (OSError, http.client.HTTPException, ValueError) as exc:
             # One unreachable board must never sink the run - the user would get an
             # empty list and no way to tell it apart from "nothing is open".
+            # OSError, not just URLError: a socket reset while the body is
+            # being read comes through bare as ConnectionResetError.
             failed.append("%s (%s)" % (company, getattr(exc, "code", None) or type(exc).__name__))
             log("  %-22s unreachable: %s" % (company, exc))
             continue
