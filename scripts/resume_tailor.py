@@ -441,6 +441,23 @@ def cover_letter(plan):
     return "\n".join(L) + "\n"
 
 
+def finished_letter(path):
+    """A letter already in the folder that the template must not replace.
+
+    From the command line cover_writer is not importable, so every run took
+    the fallback and overwrote cover-letter.md - including the Wellbeing Ally
+    letter cover_writer had written and checked for that posting, leaving the
+    .md saying one thing and the PDF she would upload another. Only an
+    untouched template, its slot still open, is safe to regenerate.
+    """
+    try:
+        with open(path) as fh:
+            text = fh.read()
+    except OSError:
+        return False
+    return "[WHY THIS ONE:" not in text
+
+
 def page_count(path):
     try:
         from pypdf import PdfReader
@@ -491,8 +508,9 @@ def run(posting_id, want_pdf=True, path=internships.PATH, keep_titles=()):
     letter = None
     if written.get("error"):
         letter = cover_letter(plan)
-        if letter:
-            with open(os.path.join(folder, "cover-letter.md"), "w") as fh:
+        md = os.path.join(folder, "cover-letter.md")
+        if letter and not finished_letter(md):
+            with open(md, "w") as fh:
                 fh.write(letter)
     else:
         letter = True
