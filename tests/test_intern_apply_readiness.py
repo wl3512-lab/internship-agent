@@ -13,18 +13,18 @@ import internships
 
 
 class TestTranscriptAnswers(unittest.TestCase):
-    PROFILE = {"resume_text": "BFA, Interactive Media Arts · Major GPA 3.94",
-               "transcript": {"gpa_cumulative": "3.59", "gpa_major": "3.94", "path": __file__}}
+    PROFILE = {"resume_text": "BFA, Interaction Design · Major GPA 3.85",
+               "transcript": {"gpa_cumulative": "3.42", "gpa_major": "3.85", "path": __file__}}
 
     def test_plain_gpa_is_cumulative_not_the_resume_major_gpa(self):
         from intern_apply import answer_for
-        self.assertEqual(answer_for("GPA", self.PROFILE, {}), "3.59")
-        self.assertEqual(answer_for("What is your grade point average?", self.PROFILE, {}), "3.59")
-        self.assertEqual(answer_for("Major GPA", self.PROFILE, {}), "3.94")
+        self.assertEqual(answer_for("GPA", self.PROFILE, {}), "3.42")
+        self.assertEqual(answer_for("What is your grade point average?", self.PROFILE, {}), "3.42")
+        self.assertEqual(answer_for("Major GPA", self.PROFILE, {}), "3.85")
 
     def test_no_transcript_means_ask_not_guess(self):
         from intern_apply import answer_for
-        self.assertIsNone(answer_for("GPA", {"resume_text": "Major GPA 3.94"}, {}))
+        self.assertIsNone(answer_for("GPA", {"resume_text": "Major GPA 3.85"}, {}))
 
     def test_transcript_upload_gets_the_file(self):
         from intern_apply import answer_for
@@ -82,6 +82,6 @@ class TestReadiness(unittest.TestCase):
         # rule answered with a name - a string in a file field.
         plan = self.plan([{'label': 'Please upload your academic record (University Transcript)',
                            'required': False, 'fields': [{'type': 'input_file'}]}],
-                         {'school': 'New York University'})
+                         {'school': 'Northgate University'})
         self.assertFalse(plan['filled'])
         self.assertEqual(len(plan['by_hand']), 1)

@@ -30,12 +30,12 @@ Run it:  python3 intern_scout.py            (writes to the tracker, see config.p
 
 import argparse
 import datetime as dt
+import http.client
 import json
 import os
 import re
 import ssl
 import sys
-import urllib.error
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -316,6 +316,18 @@ def from_ashby(company, slug):
 
 
 BOARDS = {"greenhouse": from_greenhouse, "lever": from_lever, "ashby": from_ashby}
+# A watchlist entry with "board": "manual" and a "url" is a company worth
+# watching that has no readable board. The scan skips it without calling it a
+# failure, and `by_hand()` lists them so the run and the report can say "open
+# these yourself".
+MANUAL = "manual"
+
+
+def by_hand(watchlist):
+    """The companies the scout cannot read, with where to look."""
+    return [{"company": e.get("company") or "?", "url": e.get("url") or "",
+             "note": e.get("note") or ""}
+            for e in watchlist if (e.get("board") or "").lower() == MANUAL]
 
 # The section that says what they actually want. Keeping it on the record is
 # what lets the odds assessment compare the user's evidence against their asks
@@ -377,11 +389,29 @@ def match_interests(role, body, wanted):
     for field, words in INTERESTS.items():
         if field not in wanted:
             continue
-        if any(w in hay_title for w in words):
+        if _interest_re(field).search(hay_title):
             hits.append((field, 2))
-        elif any(w in hay_body for w in words):
+        elif _interest_re(field).search(hay_body):
             hits.append((field, 1))
     return hits
+
+
+_INTEREST_RES = {}
+
+
+def _interest_re(field):
+    """A field's words, each anchored to the start of a word.
+
+    Plain substring matching read "opportunity" and "community" as Unity and
+    "promotion" as motion, which scored every biotech lab co-op in Vancouver
+    as creative tech, fit 4, top of the queue. The start is anchored and the
+    end is not, so stems like "prototyp" and "creative techno" still reach
+    "prototyping" and "creative technologist".
+    """
+    if field not in _INTEREST_RES:
+        _INTEREST_RES[field] = re.compile(
+            "|".join(r"(?<!\w)" + re.escape(w) for w in INTERESTS[field]))
+    return _INTEREST_RES[field]
 
 
 FIELD_WORDS = {"creative": "creative tech", "design": "design",
@@ -434,15 +464,23 @@ def scan(watchlist, wanted, log):
         board = (entry.get("board") or "").lower()
         slug = entry.get("slug")
         company = entry.get("company") or slug
+        if board == MANUAL:
+            # No API to read. Meta, for one, publishes only a JS-rendered careers
+            # site, so the agent opens it in a browser when asked; the morning
+            # run just says so rather than counting it as a board that broke.
+            log("  %-22s no public board - check by hand: %s" % (company, entry.get("url") or ""))
+            continue
         reader = BOARDS.get(board)
         if not reader or not slug:
             failed.append("%s (no %s board)" % (company, board or "?"))
             continue
         try:
             rows = list(reader(company, slug))
-        except (urllib.error.URLError, urllib.error.HTTPError, ValueError, TimeoutError) as exc:
+        except (OSError, http.client.HTTPException, ValueError) as exc:
             # One unreachable board must never sink the run - the user would get an
             # empty list and no way to tell it apart from "nothing is open".
+            # OSError, not just URLError: a socket reset while the body is
+            # being read comes through bare as ConnectionResetError.
             failed.append("%s (%s)" % (company, getattr(exc, "code", None) or type(exc).__name__))
             log("  %-22s unreachable: %s" % (company, exc))
             continue
@@ -535,8 +573,16 @@ def run(dry_run=False, path=internships.PATH, log=print):
         "ran_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "summary": summary,
         "sources_failed": failed,
+        "check_by_hand": by_hand(watchlist),
     }
     internships.apply({"postings": postings, "runs": [run_row]}, path)
+    # refresh "what you're looking for" with today's postings; a summary that
+    # fails to build must never cost the run
+    try:
+        import intern_search
+        intern_search.save(path=path)
+    except Exception as e:  # noqa: BLE001
+        log("search summary not refreshed: %s" % e)
     return {"added": fresh, "seen": len(postings), "failed": failed}
 
 
@@ -547,6 +593,10 @@ def main():
     result = run(dry_run=args.dry_run)
     if result["failed"]:
         print("Couldn't reach: " + ", ".join(result["failed"]))
+    hand = by_hand(load_json(WATCHLIST, []))
+    if hand:
+        print("No public board, check by hand: " + ", ".join(
+            "%s (%s)" % (h["company"], h["url"]) if h["url"] else h["company"] for h in hand))
     return 0
 
 
