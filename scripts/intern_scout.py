@@ -316,6 +316,18 @@ def from_ashby(company, slug):
 
 
 BOARDS = {"greenhouse": from_greenhouse, "lever": from_lever, "ashby": from_ashby}
+# A watchlist entry with "board": "manual" and a "url" is a company worth
+# watching that has no readable board. The scan skips it without calling it a
+# failure, and `by_hand()` lists them so the run and the report can say "open
+# these yourself".
+MANUAL = "manual"
+
+
+def by_hand(watchlist):
+    """The companies the scout cannot read, with where to look."""
+    return [{"company": e.get("company") or "?", "url": e.get("url") or "",
+             "note": e.get("note") or ""}
+            for e in watchlist if (e.get("board") or "").lower() == MANUAL]
 
 # The section that says what they actually want. Keeping it on the record is
 # what lets the odds assessment compare the user's evidence against their asks
@@ -452,6 +464,12 @@ def scan(watchlist, wanted, log):
         board = (entry.get("board") or "").lower()
         slug = entry.get("slug")
         company = entry.get("company") or slug
+        if board == MANUAL:
+            # No API to read. Meta, for one, publishes only a JS-rendered careers
+            # site, so the agent opens it in a browser when asked; the morning
+            # run just says so rather than counting it as a board that broke.
+            log("  %-22s no public board - check by hand: %s" % (company, entry.get("url") or ""))
+            continue
         reader = BOARDS.get(board)
         if not reader or not slug:
             failed.append("%s (no %s board)" % (company, board or "?"))
@@ -555,6 +573,7 @@ def run(dry_run=False, path=internships.PATH, log=print):
         "ran_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "summary": summary,
         "sources_failed": failed,
+        "check_by_hand": by_hand(watchlist),
     }
     internships.apply({"postings": postings, "runs": [run_row]}, path)
     # refresh "what you're looking for" with today's postings; a summary that
@@ -574,6 +593,10 @@ def main():
     result = run(dry_run=args.dry_run)
     if result["failed"]:
         print("Couldn't reach: " + ", ".join(result["failed"]))
+    hand = by_hand(load_json(WATCHLIST, []))
+    if hand:
+        print("No public board, check by hand: " + ", ".join(
+            "%s (%s)" % (h["company"], h["url"]) if h["url"] else h["company"] for h in hand))
     return 0
 
 

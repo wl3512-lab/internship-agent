@@ -1005,6 +1005,36 @@ class TestAStatedGraduatingClassIsAWall(unittest.TestCase):
         self.assertFalse(agent.blocked(self._p("")))
         self.assertFalse(agent.blocked({"id": "x"}))
 
+class TestManualBoards(unittest.TestCase):
+    """A company with no readable board is a reminder, not a failure.
+
+    Meta publishes only a JS-rendered careers site. Listing it as
+    {"board": "manual", "url": ...} must neither crash the scan nor show up in
+    "Couldn't reach", which is for boards that exist and broke.
+    """
+
+    ENTRY = {"board": "manual", "company": "Meta",
+             "url": "https://www.metacareers.com/jobsearch/"}
+
+    def test_manual_entry_is_skipped_without_failing(self):
+        lines = []
+        found, failed = scout.scan([self.ENTRY], {"design"}, lines.append)
+        self.assertEqual(found, [])
+        self.assertEqual(failed, [])
+        self.assertTrue(any("check by hand" in l and "metacareers" in l for l in lines))
+
+    def test_by_hand_lists_only_manual_entries(self):
+        hand = scout.by_hand([self.ENTRY, {"board": "greenhouse", "company": "Figma", "slug": "figma"}])
+        self.assertEqual([h["company"] for h in hand], ["Meta"])
+        self.assertEqual(hand[0]["url"], self.ENTRY["url"])
+
+    def test_unknown_board_is_still_a_failure(self):
+        found, failed = scout.scan([{"board": "workday", "company": "Nintendo Japan", "slug": "x"}],
+                                   {"design"}, lambda s: None)
+        self.assertEqual(found, [])
+        self.assertEqual(failed, ["Nintendo Japan (no workday board)"])
+
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

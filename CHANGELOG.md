@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- Watchlist entries can be `{"board": "manual", "company": ..., "url": ...}`
+  for a company with no readable board (Meta's careers site is JS-rendered,
+  with no Greenhouse, Lever or Ashby behind it). The scan skips them without
+  counting a failure, the run prints "No public board, check by hand: …", and
+  each run row carries `check_by_hand` so the report can say the same.
 - Forms that offer a date as ranges ("December 2028 - August 2029", "Before
   September 2027", "September 2029 or later") now get the one range that
   holds the user's month; a month between ranges is handed back, not guessed.
