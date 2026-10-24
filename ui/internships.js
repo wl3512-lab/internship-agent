@@ -35,21 +35,37 @@
     skipped:    ["Skipped",    "s-skip"],
     closed:     ["Closed",     "s-skip"]
   };
-  var LOC = { vancouver: "Vancouver", canada: "Canada", seattle: "Seattle", remote_canada: "Remote CA",
-              remote_global: "Remote", remote_us: "Remote US", us: "US", other: "Other",
-              unknown: "\u2014" };
-  var LOC_GROUP = { vancouver: "vancouver", canada: "canada", seattle: "seattle", remote_canada: "remote",
-                    remote_global: "remote", remote_us: "remote", us: "us", other: "other",
-                    unknown: "other" };
-  /* Home region, then remote. A role that may need a visa is not off the
-     table, but the scout says so in eligibility_note and it sorts below
-     anything that does not. */
-  var PRI = { vancouver: 1, canada: 1, seattle: 1, remote_canada: 1, remote_global: 1 };
+  /* Where a posting is. The user's own places (their profile's "places", best
+     first, which the planner sends with the tracker) come first and sort first;
+     then the groups the scout gives everything else, as [tag, filter, sorts first].
+     A role that may need a visa is not off the table, but the scout says so in
+     eligibility_note and it sorts below anything that does not. */
+  var BUILT_IN = { remote_global: ["Remote", "remote", 1], remote_us: ["Remote US", "remote", 0],
+                   remote_canada: ["Remote CA", "remote", 1],       // older trackers
+                   us: ["US", "us", 0], other: ["Other", "other", 0], unknown: ["\u2014", "other", 0] };
+  /* Without places from the server (an older planner), the groups the postings
+     already carry stand in for them, named after themselves. */
+  function places() {
+    if (state.places.length) return state.places;
+    var seen = {}, out = [];
+    state.postings.forEach(function (p) {
+      var g = p.location_group;
+      if (typeof g === "string" && g && !BUILT_IN[g] && !seen[g]) {
+        seen[g] = 1;
+        out.push({ group: g, label: g.charAt(0).toUpperCase() + g.slice(1).replace(/_/g, " ") });
+      }
+    });
+    return out.sort(function (a, b) { return a.label.localeCompare(b.label); });
+  }
+  function place(g) { return places().filter(function (t) { return t.group === g; })[0]; }
+  function locLabel(g) { var t = place(g); return t ? t.label : (BUILT_IN[g] || BUILT_IN.other)[0]; }
+  function locGroup(g) { return place(g) ? g : (BUILT_IN[g] ? BUILT_IN[g][1] : "other"); }
+  function sortsFirst(g) { return !!place(g) || !!(BUILT_IN[g] && BUILT_IN[g][2]); }
   var ACTIVE = { "new": 1, needs_info: 1, ready: 1, submitted: 1, interview: 1, offer: 1 };
   var FILTERS = [["active", "Active"], ["all", "All"], ["submitted", "Sent"], ["skipped", "Passed"]];
 
   var API = "http://127.0.0.1:8765";
-  var state = { postings: [], asks: [], runs: [], notes: [], profile: {} };
+  var state = { postings: [], asks: [], runs: [], notes: [], profile: {}, places: [] };
   var view = { filter: "active", loc: "all", tab: "needs" };
 
   function el(tag, cls, txt) {
@@ -71,6 +87,8 @@
       state[k] = Array.isArray(v[k]) ? v[k] : [];
     });
     state.profile = (v.profile && typeof v.profile === "object") ? v.profile : {};
+    // only the page load carries places; a write's reply does not, so keep them
+    if (Array.isArray(v.places)) state.places = v.places.filter(function (t) { return t && typeof t.group === "string"; });
     return true;
   }
   function cache() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
@@ -130,7 +148,7 @@
     return el("span", "jb-pill " + m[1], m[0]);
   }
   function locTag(g) {
-    return el("span", "jb-loc" + (PRI[g] ? " pri" : ""), LOC[g] || "Other");
+    return el("span", "jb-loc" + (sortsFirst(g) ? " pri" : ""), locLabel(g));
   }
   function byId(id) {
     for (var i = 0; i < state.postings.length; i++) if (state.postings[i].id === id) return state.postings[i];
@@ -395,7 +413,7 @@
       ["role", "Role", "text", "Design Intern"],
       ["company", "Company", "text", "Company"],
       ["url", "Link", "url", "https://…"],
-      ["location", "Location", "text", "Vancouver, BC"],
+      ["location", "Location", "text", "City, or Remote"],
       ["deadline", "Deadline", "date", ""]
     ];
     var inputs = {};
@@ -411,9 +429,8 @@
     var lab = el("label", "jb-field");
     lab.appendChild(el("span", null, "Where"));
     var sel = el("select");
-    [["vancouver", "Vancouver / BC"], ["canada", "Elsewhere in Canada"], ["seattle", "Seattle area"],
-     ["remote_canada", "Remote (Canada)"],
-     ["remote_global", "Remote (anywhere)"], ["remote_us", "Remote (US)"], ["us", "United States"], ["other", "Other"]]
+    places().map(function (t) { return [t.group, t.label]; })
+      .concat([["remote_global", "Remote (anywhere)"], ["remote_us", "Remote (US)"], ["us", "United States"], ["other", "Other"]])
       .forEach(function (o) { var op = el("option", null, o[1]); op.value = o[0]; sel.appendChild(op); });
     inputs.location_group = sel;
     lab.appendChild(sel);
@@ -462,8 +479,8 @@
     var lab = el("label", "jb-locpick");
     lab.appendChild(el("span", null, "Where"));
     var sel = el("select");
-    [["all", "Anywhere"], ["vancouver", "Vancouver / BC"], ["canada", "Elsewhere in Canada"],
-     ["seattle", "Seattle area"], ["remote", "Remote"], ["us", "United States"], ["other", "Other"]]
+    [["all", "Anywhere"]].concat(places().map(function (t) { return [t.group, t.label]; }))
+      .concat([["remote", "Remote"], ["us", "United States"], ["other", "Other"]])
       .forEach(function (o) { var op = el("option", null, o[1]); op.value = o[0]; sel.appendChild(op); });
     sel.value = view.loc;
     sel.addEventListener("change", function () { view.loc = sel.value; render(); });
@@ -480,11 +497,11 @@
       return ["skipped", "closed"].indexOf(p.status) >= 0;
     });
     if (view.loc !== "all") list = list.filter(function (p) {
-      return (LOC_GROUP[p.location_group] || "other") === view.loc;
+      return locGroup(p.location_group) === view.loc;
     });
     // what she wants first, then best fit, then soonest
     list.sort(function (a, b) {
-      return (PRI[b.location_group] ? 1 : 0) - (PRI[a.location_group] ? 1 : 0)
+      return (sortsFirst(b.location_group) ? 1 : 0) - (sortsFirst(a.location_group) ? 1 : 0)
         || (b.fit || 0) - (a.fit || 0)
         || (a.deadline || "9999").localeCompare(b.deadline || "9999");
     });
@@ -729,6 +746,11 @@
       });
       box.appendChild(g);
     }
+    function whereNames() {
+      var n = { unknown: "Unclear", us: "US", other: "Other", remote: "Remote" };
+      places().forEach(function (t) { n[t.group] = t.label; });
+      return n;
+    }
     function counts(pairs, names) {
       return (pairs || []).map(function (kv) { return (names && names[kv[0]] || kv[0]) + " " + kv[1]; }).join(" · ");
     }
@@ -736,8 +758,7 @@
     group("What", [["Kinds", (s.kinds || []).join("\n")], ["Work", (s.fields || []).join("\n")],
                    ["Live now", counts(s.fields_found)]]);
     group("Where", [["In order", (s.where || []).join("  ›  ")], ["Based", s.based],
-                    ["Live now", counts(s.where_found, { unknown: "Unclear", us: "US", other: "Other",
-                                                         vancouver: "Vancouver", canada: "Canada", remote: "Remote" })]]);
+                    ["Live now", counts(s.where_found, whereNames())]]);
     group("When", [["Graduating", s.graduating], ["School", s.school],
                    ["Terms", (s.terms || []).map(function (t) { return t[0] + " (" + t[1] + ")"; }).join(" · ")]]);
     var v = (s.visa && s.visa.rows || []).map(function (r) { return [r.where, r.text]; });
