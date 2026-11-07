@@ -17,6 +17,10 @@ scores on its own, and drafting happens when the user asks for it.
     python3 intern_profile.py --set key=value amend a fact
     python3 intern_profile.py --merge a.json  merge structured answers (places, declarations...)
     python3 intern_profile.py --check         what is still missing; does the résumé parse
+
+If the résumé is a designed layout printed from HTML, point the profile at that
+source and tailored résumés reuse its look:
+    python3 intern_profile.py --set resume_design=/path/to/resume.html
 """
 
 import json

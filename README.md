@@ -19,6 +19,10 @@ Built by a student for her own search, then generalised so it works for anyone.
   deeper tailoring it works with the
   [resume-tailoring skill](https://github.com/varunr89/resume-tailoring-skill),
   and any reworded line is shown to you next to the original before it goes in.
+- **Checks what an ATS sees** in every tailored PDF: real fonts, standard
+  sections, month dates, the job title, and which of the posting's terms are
+  on the page in its words, which you have in other words, which you wrote
+  elsewhere, and which you have never claimed (it asks, never adds).
 - **Fills application forms** in a visible browser, uploads the tailored PDF,
   and stops. It never answers a legal or demographic question you have not
   answered yourself.
@@ -89,7 +93,8 @@ Record shapes:
 
 ```
 posting  {id, role, company, url, apply_url, location, location_group, fit, fit_reasons,
-          eligibility_note, materials:[{label,url,note}], deadline, found_at, status}
+          eligibility_note, materials:[{label,url,note}], deadline, found_at, status,
+          next_step, next_due}
 ask      {id, question, why, posting_id, answer, status, answered_at}
 note     {id, text, status, reply, created_at}
 run      {id, ran_at, summary, sources_failed:[]}
@@ -107,6 +112,21 @@ launchd:
 python3 scripts/intern_scout.py && python3 scripts/intern_mail.py && python3 scripts/intern_report.py
 ```
 
+### The planner page
+
+`ui/internships.js` and `ui/internships.css` are the Internships page and the
+résumé chat from the Today planner: the five sections (Needs you, Ready to
+send, Applied, Every posting, Notes, Log), "I submitted it" on every posting,
+and a docked chat that tailors a résumé to one job. The planner loads them from
+this clone, the same way its Python imports `scripts/`, so a pull updates both.
+They expect the planner's state server on `127.0.0.1:8765` (`/internships`,
+`/internships/chat`, `/internships/fill`, `/internships/run`); without it the
+page shows the last copy it cached and says so.
+
+The **Looking for** tab reads `profile.search` from the tracker, which
+`scripts/intern_search.py --save` writes (the scout does it after every run).
+Run it without `--save` to print the same summary in a terminal.
+
 ## Scripts
 
 | | |
@@ -119,7 +139,9 @@ python3 scripts/intern_scout.py && python3 scripts/intern_mail.py && python3 scr
 | `intern_odds.py` | how realistic a posting is for you, and why |
 | `intern_tailor.py` | a posting's brief; attach drafts and questions |
 | `resume_tailor.py` | reorder-only résumé and cover letter per posting |
-| `intern_render.py` | print a drafts folder's HTML to PDF |
+| `intern_render.py` | print a drafts folder's HTML to PDF, then run the ATS check |
+| `resume_check.py` | what an ATS sees: fonts, sections, dates, the posting's keywords in its own words |
+| `pdf_fonts.py` | swap variable web fonts for static ones before printing (no Type3) |
 | `intern_apply.py` | check and plan a form fill from the form's own schema |
 | `intern_fill.py` | fill it in a visible browser; stops before submit |
 | `intern_add.py` | add a posting you pasted in |

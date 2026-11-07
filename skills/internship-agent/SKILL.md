@@ -162,6 +162,18 @@ If filling by hand with agent-browser instead:
   click it, re-snapshot, click the option's own ref, read the value back.
 - Refs move after every change; re-snapshot between fields.
 - Check `agent-browser tab list` before trusting anything.
+- **Open the window headed.** `intern_fill.py` does this for you; by hand it is
+  `agent-browser --session <company> --headed open <url>` on the *first* call
+  (the flag only matters when the window is made). A headless session fills a
+  form the user cannot see, and "it's filled" then means nothing to them.
+
+Some employers have no readable board at all (Meta's careers site is
+JS-rendered, with no Greenhouse, Lever or Ashby behind it). Keep them on the
+watchlist as `{"board": "manual", "company": ..., "url": ...}`: the morning run
+lists them under "check by hand" instead of counting a failure, and when the
+user asks, open the url in a headed browser, read it with
+`agent-browser eval "document.body.innerText"` (snapshot refs often come back
+empty on these sites), and fill the form the same way, text fields only.
 
 Always write `PASTE-PACK.md` in the folder (links, files to upload, answers to
 paste). It is what survives a lost tab, and for Workday-style portals that need

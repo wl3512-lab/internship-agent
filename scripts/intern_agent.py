@@ -21,6 +21,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import intern_odds
 import internships
 
 ACTIVE = {"new", "needs_info", "ready"}
@@ -44,9 +45,18 @@ def parse(v):
     return d if d.tzinfo else d.replace(tzinfo=dt.timezone.utc)
 
 
-def days_until(v):
+def days_until(v, today=None):
+    """Calendar days until a deadline, counted where the user is.
+
+    A date-only deadline is open all of that day. Measured from midnight UTC,
+    "2026-10-01" read -2 at 10pm on October 1 in New York, listing a posting
+    that closed that night as two days gone.
+    """
     d = parse(v)
-    return None if not d else (d - now()).days
+    if not d:
+        return None
+    day = d.date() if len(str(v).strip()) == 10 else d.astimezone().date()
+    return (day - (today or dt.date.today())).days
 
 
 def blocked(p):
@@ -59,10 +69,16 @@ def blocked(p):
 
     "Rising senior" stays a headwind. It is a preference rather than a filter
     and plenty of postings say it without enforcing it.
+
+    A graduate program named in the title is a wall too, note or not: a
+    description that only says "currently pursuing a Master's" leaves the note
+    empty, and four Pinterest Master's/PhD internships sat in the queue while
+    intern_odds already called them blocked.
     """
     note = (p.get("eligibility_note") or "").lower()
     return ("not eligible" in note or "phd" in note or "master's" in note
-            or "wants graduates of" in note or "wants graduates between" in note)
+            or "wants graduates of" in note or "wants graduates between" in note
+            or bool(intern_odds.GRAD_TITLE_RE.search(p.get("role") or "")))
 
 
 def load(path=internships.PATH):
