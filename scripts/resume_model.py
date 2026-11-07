@@ -65,9 +65,15 @@ def _split_sections(lines):
 # sentence that happened to contain "2026", and swallowed the first bullet of
 # every project as if it were the organisation line.
 TITLE_RE = re.compile(r"^[A-Z][^.]{0,90}$")
+# A project can carry its award where the dates go: "Name · Type · Role  2nd Place · JAMKADIUM 2026".
+# That tail made the line too long to read as a title, so the project was glued onto the one above.
+AWARD_TAIL_RE = re.compile(r"\s+(\d+(?:st|nd|rd|th) Place\s*\u00b7\s*[^\u00b7]{2,40}?\b(?:19|20)\d{2})$", re.I)
 
 
 def _looks_like_heading(line, kind):
+    award = AWARD_TAIL_RE.search(line)
+    if award:
+        line = line[:award.start()] + " " + award.group(1)[-4:]
     if len(line) > 110 or not DATE_RE.search(line):
         return False
     if line.endswith(('.', ':', ';', ',')):
@@ -107,9 +113,11 @@ def _entries(lines, kind="experience"):
         if _looks_like_heading(stripped, kind):
             if cur:
                 entries.append(cur)
-            title = DATE_RE.sub("", stripped).strip(" \u00b7-\u2013")
+            award = AWARD_TAIL_RE.search(stripped)
+            head = stripped[:award.start()] if award else stripped
+            title = DATE_RE.sub("", head).strip(" \u00b7-\u2013")
             cur = {"title": re.sub(r"\s{2,}", " ", title).strip(),
-                   "dates": " ".join(DATE_RE.findall(stripped)),
+                   "dates": award.group(1).strip() if award else " ".join(DATE_RE.findall(stripped)),
                    "org": "", "body": [], "tools": ""}
             continue
         if cur is None:

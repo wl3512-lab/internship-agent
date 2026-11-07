@@ -47,6 +47,8 @@ KEEP_AT_MOST = 3
 
 def pretty_dates(dates):
     """PDF extraction drops the dash between a range, so put it back."""
+    if re.search(r"\bPlace\b", dates or ""):
+        return dates.strip()   # an award in the date slot ("2nd Place · JAMKADIUM 2026") is not a range
     parts = [p for p in (dates or "").split() if p]
     merged, i = [], 0
     while i < len(parts):
