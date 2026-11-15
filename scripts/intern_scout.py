@@ -82,9 +82,13 @@ INTERESTS = {
                  "experiential", "rendering", "graphics"],
     "design": ["product design", "ux", "ui ", "user experience", "interaction design",
                "design intern", "visual design", "brand design", "design systems",
-               "prototyp"],
+               "prototyp", "graphic design", "motion design", "content design",
+               "creative design", "multimedia"],
     "ai": ["machine learning", " ml ", "artificial intelligence", " ai ", "ai/ml",
            "computer vision", "nlp", "deep learning", "research intern", "applied ai"],
+    "game": ["game design", "game designer", "level design", "narrative design",
+             "systems design", "tech art", "technical art", "game art", "gameplay design",
+             "ux design", "ux research", "design research", "user research"],
     "software": ["software engineer", "software develop", "full stack", "frontend",
                  "front-end", "backend", "back-end", "mobile", "ios", "swift",
                  "developer intern", "engineering intern", "web develop"],
@@ -415,7 +419,7 @@ def _interest_re(field):
 
 
 FIELD_WORDS = {"creative": "creative tech", "design": "design",
-               "ai": "AI", "software": "software"}
+               "ai": "AI", "software": "software", "game": "game design"}
 
 
 def score(posting, hits, group):
