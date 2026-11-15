@@ -21,5 +21,15 @@ class LookupTest(unittest.TestCase):
         self.assertIsNone(intern_answers.lookup("anything", tempfile.mkdtemp()))
 
 
+class TermTest(unittest.TestCase):
+    def test_may_is_spring(self):
+        import intern_apply
+        self.assertEqual(intern_apply.match_option("May 2029", ["Spring 2029", "Fall 2029"]), "Spring 2029")
+
+    def test_december_is_fall(self):
+        import intern_apply
+        self.assertEqual(intern_apply.match_option("December 2028", ["Spring 2029", "Fall 2028"]), "Fall 2028")
+
+
 if __name__ == "__main__":
     unittest.main()

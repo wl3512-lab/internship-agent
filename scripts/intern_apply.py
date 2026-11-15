@@ -83,6 +83,10 @@ CANADA_HINTS = {"canada", "british columbia", "ontario", "quebec", "alberta", "b
 FOLLOW_UP_RE = re.compile(r"\bplease (?:list|describe|explain)\b|\blist the type\b", re.I)
 
 
+# a short label can still be the most important essay on the form
+WHY_RE = re.compile(r"^\s*why\b|\btell us\b|\bdescribe\b", re.I)
+
+
 def posting_in_canada(posting):
     if not posting:
         return False
@@ -175,6 +179,12 @@ def match_option(value, options):
     when = _month(want)
     if when:
         hits = [i for i, o in enumerate(low) if _month_in(when, o)]
+        if len(hits) == 1:
+            return options[hits[0]]
+        # terms ("Spring 2029"): a spring term ends Jan-Jun, fall Aug-Dec
+        term = ("spring" if when[1] <= 6 else "fall" if when[1] >= 8 else None)
+        if term and not hits:
+            hits = [i for i, o in enumerate(low) if o == "%s %d" % (term, when[0])]
         return options[hits[0]] if len(hits) == 1 else None
 
     # A substring fallback is only safe for a distinctive answer. "No" is
@@ -362,7 +372,7 @@ def build_plan(posting_id, path=internships.PATH):
                                    "Run: python3 resume_tailor.py %s" % posting.get("id")})
             continue
         # A long box that asks for a link is not an essay: the link is the answer.
-        essay = ("textarea" in kinds and len(label) > 40
+        essay = ("textarea" in kinds and (len(label) > 40 or WHY_RE.search(label))
                  and not (isinstance(value, str) and value.startswith("http")))
         if essay:
             (blocked if required else manual).append({"label": label, "required": required,
