@@ -109,6 +109,12 @@ def written_answer(label, folder):
         except IOError:
             return None
 
+    import intern_answers
+    researched = intern_answers.lookup(label, folder)
+    if researched and "cover letter" not in l:
+        if UNFILLED.search(researched):
+            return None, "Your answer in answers.json still has a blank for you to fill in."
+        return researched, "answers.json"
     if "cover letter" in l:
         raw, src = read("cover-letter.md"), "cover-letter.md"
         text = draft_body(raw) if raw else ""

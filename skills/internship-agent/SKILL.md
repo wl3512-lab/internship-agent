@@ -140,6 +140,39 @@ python3 "$S/intern_tailor.py" save <posting-id> \
   --ask "Another one"
 ```
 
+### 4b. Answer the form's questions, from research
+
+Lucy asked for this on 2026-11-15: the agent answers the written questions
+("why us", "a project you're proud of", "how would you approach…"), and every
+answer must rest on real research into the company and its CEO. A generic
+answer is a wasted application.
+
+```bash
+python3 ~/internship-agent/scripts/intern_answers.py brief <posting-id>   # questions + research checklist
+```
+
+1. **Research into `research.md`** in the posting folder, every claim with a
+   URL: what they make and shipped this year; the CEO (name, tenure,
+   background, what they have said publicly about the company's direction,
+   quoted with a link); the team this role sits in; news from the last six
+   months. Use WebSearch/WebFetch on the company's own site, newsroom, CEO
+   interviews and letters. Check names and dates against a second source, and
+   never use a fact you cannot link.
+2. **Answers into `answers.json`**: the form's question label verbatim, the
+   answer, `uses` (the researched facts it leans on) and `her_facts` (the
+   résumé/CV/letter facts). Each answer: the specific thing at the company,
+   then the matching thing she did with its real number, then what she would
+   bring, said plainly. Keep to any word limit. Her voice rules apply.
+3. `intern_answers.py check <id>` must pass. `intern_fill.py` then pastes the
+   answers into the form by itself.
+
+Her experience still comes only from her own materials, so never invent a
+project or a number. If a question needs a fact she hasn't given (her favourite
+product of theirs, a personal tie to the company), ask her in one sentence.
+**If the posting forbids AI-written answers** (The Athletic does), don't write
+the answer. Put the research in the folder and tell her the answer has to be
+hers.
+
 ### 5. Fill the form
 
 ```bash
