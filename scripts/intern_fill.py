@@ -294,7 +294,8 @@ def run(pid):
         resume = (intern_apply.load_profile().get("resume_source") or "")
 
     url = form_url(posting)
-    job = re.sub(r"\D", "", pid.split(":")[-1]) or url
+    gh = re.search(r"greenhouse\.io/[^/]+/jobs/(\d+)", url)
+    job = (gh.group(1) if gh else re.sub(r"\D", "", pid.split(":")[-1])) or url
     b = Browser(job)
     report(pid, state="running", step="Opening the form")
     code, out = b.open(url)

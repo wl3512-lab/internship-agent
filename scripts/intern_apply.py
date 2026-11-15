@@ -184,7 +184,9 @@ def match_option(value, options):
         # terms ("Spring 2029"): a spring term ends Jan-Jun, fall Aug-Dec
         term = ("spring" if when[1] <= 6 else "fall" if when[1] >= 8 else None)
         if term and not hits:
-            hits = [i for i, o in enumerate(low) if o == "%s %d" % (term, when[0])]
+            hits = [i for i, o in enumerate(low)
+                    if re.search(r"\b%s\b" % term, o) and str(when[0]) in o
+                    and not re.search(r"before|after|or later", o)]
         return options[hits[0]] if len(hits) == 1 else None
 
     # A substring fallback is only safe for a distinctive answer. "No" is
@@ -221,6 +223,11 @@ def load_profile():
 def board_questions(posting):
     """The form, from whichever board hosts it."""
     pid = posting.get("id") or ""
+    # a posting found elsewhere (Handshake, mail) whose apply link is a Greenhouse form
+    m = re.match(r"https://(?:job-boards|boards)\.greenhouse\.io/([^/]+)/jobs/(\d+)",
+                 posting.get("apply_url") or "")
+    if m and not pid.startswith("gh:"):
+        pid = "gh:%s:%s" % m.groups()
     try:
         if pid.startswith("gh:"):
             slug, job = pid.split(":")[1], pid.split(":")[2]
