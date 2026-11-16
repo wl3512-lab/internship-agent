@@ -362,16 +362,19 @@ def assess(posting, profile=None, hers=None):
             factors.append({"name": "freshness", "dir": "-",
                             "says": "Open at least %d days; the pile is deep by now." % age})
 
+    reasons = posting.get("fit_reasons") or ""
+    if isinstance(reasons, (list, tuple)):
+        reasons = " ".join(str(r) for r in reasons)
     fit = posting.get("fit") or 0
     if fit >= 4:
         score += 1
-        factors.append({"name": "field", "dir": "+", "says": posting.get("fit_reasons") or ""})
+        factors.append({"name": "field", "dir": "+", "says": reasons})
     elif fit <= 2:
         score -= 1
         factors.append({"name": "field", "dir": "-",
                         "says": "Only adjacent to the fields you named."})
 
-    if "you saved this one" in (posting.get("fit_reasons") or "").lower():
+    if "you saved this one" in reasons.lower():
         score += 1
         factors.append({"name": "the user's own read", "dir": "+",
                         "says": "You saved this on Handshake, so you have already vouched for it."})

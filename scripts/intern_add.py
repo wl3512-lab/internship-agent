@@ -33,6 +33,8 @@ def row_from(data, now=None):
     if not isinstance(data, dict) or not data.get("company") or not data.get("role"):
         raise ValueError("a posting needs at least a company and a role")
     row = {k: data[k] for k in FIELDS if data.get(k) not in (None, "")}
+    if isinstance(row.get("fit_reasons"), (list, tuple)):
+        row["fit_reasons"] = " ".join(str(r) for r in row["fit_reasons"])
     if row.get("location_group") not in BUILTIN_GROUPS | {t["group"] for t in config.places()}:
         row.pop("location_group", None)
     try:
