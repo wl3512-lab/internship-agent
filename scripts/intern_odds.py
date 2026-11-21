@@ -142,6 +142,7 @@ HARD_PROGRAM_RE = re.compile(
     r"(?![^.]{0,40}(?:or related|or equivalent)))"
     r"|(?:bachelor|b\.?s\.?)[^.]{0,30}(?:in )?computer science[^.]{0,30}required", re.I)
 ESCAPE_RE = re.compile(r"or equivalent|or related|or a related field|equivalent practical experience", re.I)
+GRAD_TITLE_RE = re.compile(r"\b(master'?s|ph\.?d|doctoral|mba)\b", re.I)
 
 
 def load_profile():
@@ -290,6 +291,14 @@ def assess(posting, profile=None, hers=None):
         return {"band": "blocked", "score": 0, "factors": [
             {"name": "degree", "dir": "wall", "says": note}],
             "summary": "Asks for a degree you are years from having."}
+    # The note comes from the description at scrape time, and a description
+    # that only says "currently pursuing a Master's" leaves it empty. The
+    # title is where these programs say it plainly.
+    if GRAD_TITLE_RE.search(posting.get("role") or ""):
+        return {"band": "blocked", "score": 0, "factors": [
+            {"name": "degree", "dir": "wall",
+             "says": "A graduate-student program by its title - you're an undergraduate."}],
+            "summary": "Asks for a degree you are years from having."}
 
     reqs = posting.get("requirements") or ""
     hard = HARD_PROGRAM_RE.search(reqs)
@@ -353,22 +362,32 @@ def assess(posting, profile=None, hers=None):
             factors.append({"name": "freshness", "dir": "-",
                             "says": "Open at least %d days; the pile is deep by now." % age})
 
+    reasons = posting.get("fit_reasons") or ""
+    if isinstance(reasons, (list, tuple)):
+        reasons = " ".join(str(r) for r in reasons)
     fit = posting.get("fit") or 0
     if fit >= 4:
         score += 1
-        factors.append({"name": "field", "dir": "+", "says": posting.get("fit_reasons") or ""})
+        factors.append({"name": "field", "dir": "+", "says": reasons})
     elif fit <= 2:
         score -= 1
         factors.append({"name": "field", "dir": "-",
                         "says": "Only adjacent to the fields you named."})
 
-    if "you saved this one" in (posting.get("fit_reasons") or "").lower():
+    if "you saved this one" in reasons.lower():
         score += 1
         factors.append({"name": "the user's own read", "dir": "+",
                         "says": "You saved this on Handshake, so you have already vouched for it."})
 
     band = ("strong" if score >= 5 else "real chance" if score >= 2
             else "long shot")
+    # A good skills match in a country the user did not list is still only
+    # worth it if they want that place specifically - which is what a long
+    # shot means. Scored on skills alone, Pinterest Dublin came out strong.
+    if posting.get("location_group") == "other":
+        band = "long shot"
+        factors.append({"name": "location", "dir": "-",
+                        "says": "Outside the places you said you can work, so it may need a visa."})
     summary = {
         "strong": "Your materials line up with what they asked for.",
         "real chance": "An ordinary shot - this is where most of your effort should go.",

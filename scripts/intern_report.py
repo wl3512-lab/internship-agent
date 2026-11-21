@@ -32,6 +32,15 @@ STATUS_WORDS = {
 }
 
 
+def due_local(v):
+    """'2026-10-16T16:00:00Z' -> 'Fri Oct 16, 12:00 PM' in the user's own time zone."""
+    try:
+        t = dt.datetime.fromisoformat(str(v).replace("Z", "+00:00")).astimezone()
+    except ValueError:
+        return str(v)
+    return t.strftime("%a %b %d, %I:%M %p").replace(" 0", " ")
+
+
 def ago(v):
     d = agent.parse(v)
     if not d:
@@ -89,6 +98,17 @@ def build(data=None, path=internships.PATH):
                 STATUS_WORDS.get(p.get("status"), p.get("status")),
                 ago(p.get("submitted_at")) or "—",
                 ("**%d days**" % quiet) if quiet else "—"))
+        # what a company asked for next, soonest first - an assessment link
+        # expires whether or not anyone remembered it
+        nxt = sorted([p for p in sent if p.get("next_step") and p.get("status") != "rejected"],
+                     key=lambda x: x.get("next_due") or "9999")
+        if nxt:
+            w("")
+            w("**Next steps they asked for:**")
+            w("")
+            for p in nxt:
+                w("- %s, %s: %s%s" % (p.get("company") or "?", (p.get("role") or "?")[:46],
+                                     p["next_step"], (" (due %s)" % due_local(p["next_due"])) if p.get("next_due") else ""))
         chase = [p for p in sent if p["id"] in stale and p.get("status") == "submitted"]
         if chase:
             w("")

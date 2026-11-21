@@ -109,6 +109,12 @@ def written_answer(label, folder):
         except IOError:
             return None
 
+    import intern_answers
+    researched = intern_answers.lookup(label, folder)
+    if researched and "cover letter" not in l:
+        if UNFILLED.search(researched):
+            return None, "Your answer in answers.json still has a blank for you to fill in."
+        return researched, "answers.json"
     if "cover letter" in l:
         raw, src = read("cover-letter.md"), "cover-letter.md"
         text = draft_body(raw) if raw else ""
@@ -288,7 +294,8 @@ def run(pid):
         resume = (intern_apply.load_profile().get("resume_source") or "")
 
     url = form_url(posting)
-    job = re.sub(r"\D", "", pid.split(":")[-1]) or url
+    gh = re.search(r"greenhouse\.io/[^/]+/jobs/(\d+)", url)
+    job = (gh.group(1) if gh else re.sub(r"\D", "", pid.split(":")[-1])) or url
     b = Browser(job)
     report(pid, state="running", step="Opening the form")
     code, out = b.open(url)
@@ -372,7 +379,15 @@ def run(pid):
         return {"error": str(exc)}
 
     shot = os.path.join(folder, "filled.png")
-    b.ab("screenshot", "--full", shot)
+    try:
+        b.ab("screenshot", "--full", shot)
+    except (RuntimeError, subprocess.TimeoutExpired):
+        # a long form can hang a full-page capture; the fill itself is done,
+        # so record it rather than losing every field to a picture
+        try:
+            b.ab("screenshot", shot)
+        except (RuntimeError, subprocess.TimeoutExpired):
+            problems.append("screenshot timed out - the form is filled in its tab")
     rel = os.path.relpath(shot, HOME)
     report(pid, state="filled", step="", done=done, left=left, problems=problems,
            screenshot=rel if os.path.exists(shot) else "", tab_url=url,

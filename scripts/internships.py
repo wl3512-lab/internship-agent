@@ -14,7 +14,9 @@ Record shapes (also documented in the README, keep them in step):
   posting  {id, role, company, url, apply_url, location, location_group,
             term, fit, fit_reasons, eligibility_note, how_to_apply,
             materials:[{label,url,note}], deadline, found_at, status,
-            updated_at, submitted_at}
+            updated_at, submitted_at, next_step, next_due}
+           next_step/next_due: what the company asked for after applying
+           (an assessment, an interview) and when it expires, ISO time
   ask      {id, question, why, posting_id, answer, status, answered_at}
   note     {id, text, status, reply, created_at}
   run      {id, ran_at, summary, sources_failed:[]}

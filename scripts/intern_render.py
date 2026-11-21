@@ -6,7 +6,8 @@
 Renders resume.html -> resume.pdf and cover-letter.html -> cover-letter.pdf
 when the HTML is newer than its PDF. The PDF being replaced is kept as
 *.prev.pdf. Reports the page count, because a résumé that spills onto a
-second page is the most common way a tailoring pass goes wrong.
+second page is the most common way a tailoring pass goes wrong, and runs
+resume_check on the new résumé so the chat sees what an ATS would.
 """
 import json
 import os
@@ -26,7 +27,13 @@ def folder_path(name, root=internships.DRAFTS):
     return full
 
 
-def render(name, root=internships.DRAFTS, to_pdf=resume_tailor.to_pdf, pages=resume_tailor.page_count):
+def _check(folder_name, root):
+    import resume_check
+    return resume_check.run(folder_name, root)
+
+
+def render(name, root=internships.DRAFTS, to_pdf=resume_tailor.to_pdf, pages=resume_tailor.page_count,
+           check=_check):
     d = folder_path(name, root)
     out = {"folder": d, "rendered": {}}
     for base in ("resume", "cover-letter"):
@@ -39,6 +46,11 @@ def render(name, root=internships.DRAFTS, to_pdf=resume_tailor.to_pdf, pages=res
             shutil.copy2(pdf, os.path.join(d, base + ".prev.pdf"))
         err = to_pdf(html, pdf)
         out["rendered"][base] = {"error": err} if err else {"pdf": pdf, "pages": pages(pdf)}
+        if base == "resume" and not err and check:
+            try:
+                out["rendered"][base]["ats_check"] = check(os.path.basename(d), root)
+            except Exception as exc:  # a check that breaks must not cost her the PDF
+                out["rendered"][base]["ats_check"] = {"error": str(exc)[:120]}
     return out
 
 
