@@ -45,23 +45,30 @@ PROMPT = """Write a short email from {name} to {ceo} ({company}'s CEO). She \
 {applied} for {role} at {company}. This is not a cover letter; it asks the CEO \
 for guidance.
 
-CONTENT, in this order, 3 short paragraphs:
-1. Say plainly she {applied} for {role} and is writing to you directly. Add ONE \
-specific hook taken from THE RESEARCH (something the company shipped or the \
-CEO or founder said publicly), in one sentence, and why it matters to her work.
-2. ONE concrete line about her fit, from HER FACTS only (a project or number she \
-actually has). Then ask: how would you suggest I position myself for this role?
-3. "If you're not the right person, could you point me to who is?" {who} Thank them.
+CONTENT, in this order, 3 short paragraphs. The whole email is a sincere \
+request for help and advice, not a pitch:
+1. Introduce her in one sentence (NYU student in Interactive Media Arts), say \
+she {applied} for {role}, and ask up front, respectfully, for the CEO's \
+guidance as she pursues this opportunity.
+2. ONE sentence on why this company matters to her, with ONE specific hook \
+from THE RESEARCH (something the company shipped or the CEO or founder said \
+publicly). ONE short line of context about her work, from HER FACTS only. Keep \
+self-promotion to that single line.
+3. Ask for help concretely: how she might best position herself for this role, \
+and what the team values most in an intern. Then: "If you are not the right \
+person, could you kindly direct me to the appropriate contact?" {who} Thank \
+them sincerely for their time and any advice.
 
 RULES
 - {min_w}-{max_w} words in the body, counting the salutation and sign-off.
-- Lucy's voice: plain, warm, first person, short sentences. No flattery, no \
-"passionate", "excited", "admire", "inspired", "I hope this finds you well".
+- Formal, professional register: complete sentences, no contractions, no \
+slang, courteous but direct. First person. No flattery, no "passionate", \
+"excited", "admire", "inspired", "I hope this finds you well".
 - Facts only from THE RESEARCH and HER FACTS. Never invent a name, number, \
 project or quote. Quote only words that appear verbatim in THE RESEARCH, in \
 curly quotes; otherwise paraphrase.
-- Salutation: "Hi {first}," ({first} is the CEO's first name from THE RESEARCH).
-- Sign-off: "Thank you,\\n{name}\\n{portfolio}"
+- Salutation: "Dear {ceo}," (the CEO's full name from THE RESEARCH; no Mr./Ms.).
+- Sign-off: "Sincerely,\\n{name}\\n{portfolio}"
 - No meeting ask (no "20 minutes", "call", "coffee").
 - Subject: under 8 words, specific, no exclamation marks.
 
