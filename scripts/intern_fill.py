@@ -379,7 +379,15 @@ def run(pid):
         return {"error": str(exc)}
 
     shot = os.path.join(folder, "filled.png")
-    b.ab("screenshot", "--full", shot)
+    try:
+        b.ab("screenshot", "--full", shot)
+    except (RuntimeError, subprocess.TimeoutExpired):
+        # a long form can hang a full-page capture; the fill itself is done,
+        # so record it rather than losing every field to a picture
+        try:
+            b.ab("screenshot", shot)
+        except (RuntimeError, subprocess.TimeoutExpired):
+            problems.append("screenshot timed out - the form is filled in its tab")
     rel = os.path.relpath(shot, HOME)
     report(pid, state="filled", step="", done=done, left=left, problems=problems,
            screenshot=rel if os.path.exists(shot) else "", tab_url=url,
