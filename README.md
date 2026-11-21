@@ -146,6 +146,22 @@ Run it without `--save` to print the same summary in a terminal.
 | `intern_fill.py` | fill it in a visible browser; stops before submit |
 | `intern_add.py` | add a posting you pasted in |
 | `intern_report.py` | the daily report |
+| `intern_ceo.py` | a short "how should I position myself / who is the right person" email to the CEO, as a draft |
+
+### CEO guidance email
+
+```bash
+python3 scripts/intern_ceo.py <posting id>            # writes <posting folder>/ceo-email.md
+python3 scripts/intern_ceo.py --submitted             # every submitted/ready posting with none yet
+python3 scripts/intern_ceo.py <id> --gmail-draft      # also a Gmail draft with resume.pdf (never sent)
+```
+
+The CEO comes from the posting's `research.md` (made first if missing). The
+address is used only if a public source shows it; otherwise To is empty, the
+draft says "needs address", and LinkedIn and the company's general contact are
+listed. Every name, number and quote is checked against the research and your
+profile. It also adds a `ceo_guidance` draft to `outreach.json`. Nothing is
+ever sent by this script.
 
 ## Limits, honestly
 
