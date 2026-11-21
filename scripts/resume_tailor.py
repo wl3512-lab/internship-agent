@@ -503,8 +503,8 @@ def run(posting_id, want_pdf=True, path=internships.PATH, keep_titles=()):
     # is only the fallback when the model is unavailable.
     written = {}
     try:
-        import cover_writer
-        written = cover_writer.write(plan["posting"]["id"])
+        import intern_cover
+        written = intern_cover.write(plan["posting"]["id"])
     except Exception as exc:
         written = {"error": str(exc)[:120]}
     letter = None

@@ -140,6 +140,39 @@ python3 "$S/intern_tailor.py" save <posting-id> \
   --ask "Another one"
 ```
 
+### 4a. The cover letter: researched, every time
+
+`resume_tailor.py` calls `intern_cover.py`, which writes the letter per
+posting. It always researches first, into `research.md` in the posting folder
+(reused for 21 days; `--refresh` redoes it). That file holds what the company
+shipped this year, the CEO's name, tenure, background (LinkedIn) and public
+statements, who leads the design team (LinkedIn, the company site), and news
+from the last six months, every line with a URL. The same file serves
+`intern_answers.py` (4b), so the "why us" answers and the letter rest on one
+set of facts.
+
+How a designer's letter differs, and what the prompt enforces:
+
+- **It is a trailer for the portfolio.** Tell ONE project as a design story:
+  the problem, the decision, what was cut or changed after testing, the result
+  with its real number. Then point to that case study by name.
+- **Pick the project for the brief.** `profile.json` → `portfolio_leads`
+  maps each project to the briefs it answers.
+- **Talk about their design like a designer.** Name a launch, a visual system or
+  a design-lead statement from the research, and say what it shows about how
+  they work. Do not use admiration words.
+- **One researched fact, used well.** A CEO or design-lead quote, or a recent
+  launch, tied to a decision the applicant really made. Quote only words the
+  research has verbatim; the fact check rejects anything else.
+- **Address a named person** only when the posting names them, or the research
+  finds the design lead or recruiter with a source. Never open with "Dear <CEO>".
+- **Brevity is the taste test:** 250–340 words, short paragraphs, thanks plus
+  the portfolio link to close, no meeting ask.
+
+`python3 "$S/intern_cover.py" <id>` rewrites one letter, and `--ready` rewrites
+every Ready posting. The previous letter is kept as `cover-letter.prev.md`,
+because the user may have edited it.
+
 ### 4b. Answer the form's questions, from research
 
 Lucy asked for this on 2026-11-15: the agent answers the written questions
