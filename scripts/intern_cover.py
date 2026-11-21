@@ -322,7 +322,7 @@ def unsupported(letter, sources):
             bad.append(n)
     # capitalised words that are not the first word of a sentence
     for m in re.finditer(r"(?<![.!?]\s)(?<!^)(?<!\n)\b([A-Z][A-Za-z0-9&'+.-]{2,})", letter):
-        w = m.group(1).rstrip(".'")
+        w = re.sub(r"'s$", "", m.group(1).rstrip(".'"))
         if w.lower() in COMMON:
             continue
         if " " + _norm(w).strip() + " " not in src and _norm(w).strip() not in src:
